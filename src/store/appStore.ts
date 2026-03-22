@@ -37,7 +37,7 @@ interface AppStore extends AppUIState {
   setSearchQuery: (q: string) => void;
   openNewCategoryModal: () => void;
   closeNewCategoryModal: () => void;
-  openNewItemModal: (categoryId?: string) => void;
+  openNewItemModal: (categoryId?: string, productType?: string) => void;
   closeNewItemModal: () => void;
   setTemplateGalleryOpen: (v: boolean) => void;
   setSelectedElement: (id: string | null) => void;
@@ -71,8 +71,9 @@ interface AppStore extends AppUIState {
   getCategoryById: (id: string) => Category | null;
   getAllItems: () => ProductItem[];
 
-  // Pending category for new item
+  // Pending state for new item modal
   pendingCategoryId: string | null;
+  pendingProductType: string | null;
 }
 
 export const useAppStore = create<AppStore>((set, get) => ({
@@ -94,6 +95,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   lastSaved: new Date().toISOString(),
   notification: null,
   pendingCategoryId: null,
+  pendingProductType: null,
 
   // ---- Initial Data ----
   categories: sampleCategories,
@@ -128,10 +130,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
   openNewCategoryModal: () => set({ isNewCategoryModalOpen: true }),
   closeNewCategoryModal: () => set({ isNewCategoryModalOpen: false }),
 
-  openNewItemModal: (categoryId) =>
-    set({ isNewItemModalOpen: true, pendingCategoryId: categoryId || null }),
+  openNewItemModal: (categoryId, productType) =>
+    set({
+      isNewItemModalOpen: true,
+      pendingCategoryId: categoryId || null,
+      pendingProductType: productType || null,
+    }),
   closeNewItemModal: () =>
-    set({ isNewItemModalOpen: false, pendingCategoryId: null }),
+    set({ isNewItemModalOpen: false, pendingCategoryId: null, pendingProductType: null }),
 
   setTemplateGalleryOpen: (v) => set({ isTemplateGalleryOpen: v }),
   setSelectedElement: (id) => set({ selectedElementId: id }),

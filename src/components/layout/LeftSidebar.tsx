@@ -3,21 +3,20 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ChevronRight, Plus, MoreHorizontal, Search,
-  Pencil, Trash2, Copy, LayoutDashboard
+  ChevronRight, Plus, Search,
+  Pencil, Trash2, Copy, Home, Sparkles
 } from 'lucide-react';
 import { useAppStore } from '@/store/appStore';
-import StatusBadge from '@/components/ui/StatusBadge';
 import type { Category, ProductItem } from '@/types';
 
 export default function LeftSidebar() {
   const {
-    categories, activeItemId, activeCategoryId,
+    categories, activeItemId,
     sidebarExpanded,
     setActiveItem, toggleCategoryExpanded,
     openNewCategoryModal, openNewItemModal,
     deleteCategory, deleteItem, duplicateItem,
-    currentView, setCurrentView,
+    currentView, setCurrentView, setActiveNavTab,
     searchQuery, setSearchQuery,
   } = useAppStore();
 
@@ -68,17 +67,26 @@ export default function LeftSidebar() {
       >
         {/* Sidebar Header */}
         <div className="px-3 pt-3 pb-2 flex-shrink-0">
-          {/* Dashboard link */}
+          {/* Home / Dashboard link */}
           <button
-            onClick={() => setCurrentView('dashboard')}
-            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-all mb-1 ${
+            onClick={() => { setCurrentView('dashboard'); setActiveNavTab('home'); }}
+            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-semibold transition-all mb-2 group ${
               currentView === 'dashboard'
-                ? 'bg-indigo-50 text-indigo-700'
+                ? 'bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-700 border border-indigo-100'
                 : 'text-slate-600 hover:bg-slate-50 hover:text-slate-800'
             }`}
           >
-            <LayoutDashboard size={15} className={currentView === 'dashboard' ? 'text-indigo-500' : 'text-slate-400'} />
-            Dashboard
+            <div className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all ${
+              currentView === 'dashboard'
+                ? 'bg-gradient-to-br from-indigo-500 to-purple-600 shadow-sm'
+                : 'bg-slate-100 group-hover:bg-indigo-100'
+            }`}>
+              <Home size={12} className={currentView === 'dashboard' ? 'text-white' : 'text-slate-400 group-hover:text-indigo-500'} />
+            </div>
+            <span>Home</span>
+            {currentView === 'dashboard' && (
+              <Sparkles size={11} className="ml-auto text-indigo-400" />
+            )}
           </button>
 
           {/* Search */}

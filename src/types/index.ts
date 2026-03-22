@@ -19,6 +19,76 @@ export type DesignElementType = 'text' | 'image' | 'rect' | 'circle' | 'line';
 export type ProductView = 'front' | 'back' | 'sleeve' | 'side';
 
 // ------------------------------------------------------------------
+// Design Zones
+// ------------------------------------------------------------------
+export type ZonePriority = 'primary' | 'secondary' | 'optional' | 'exclusion';
+
+export type ZoneShape = 'rect' | 'ellipse';
+
+export interface SafeArea {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface PrintBoundary {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface DesignZone {
+  id: string;
+  label: string;
+  shortLabel: string;          // e.g. "LC" for Left Chest
+  hint: string;                // Smart contextual design tip
+  tip?: string;                // Secondary/bonus tip
+  productTypes: string[];      // Which product types this zone applies to
+  applicableViews: ProductView[];
+  x: number;                   // Pixels on reference canvas
+  y: number;
+  width: number;
+  height: number;
+  shape: ZoneShape;
+  priority: ZonePriority;
+  color: string;               // Zone border/accent color
+  safeArea?: SafeArea;         // Inner safe area inset
+  printBoundary?: PrintBoundary;
+  recommendedTemplateTypes?: string[];
+  suggestedElementSize?: { width: number; height: number };
+  isVisible: boolean;          // User can toggle per-zone
+}
+
+export interface ProductTypeZoneConfig {
+  productType: string;
+  displayName: string;
+  referenceCanvasWidth: number;
+  referenceCanvasHeight: number;
+  defaultView: ProductView;
+  zones: DesignZone[];
+  defaultActiveZoneId?: string;
+  layoutSuggestions?: LayoutSuggestion[];
+}
+
+export interface LayoutSuggestion {
+  id: string;
+  label: string;
+  description: string;
+  icon: string;
+  zoneIds: string[];           // Zones used in this layout
+}
+
+// Zone state tracked in the store
+export interface ZoneState {
+  zonesVisible: boolean;
+  activeZoneId: string | null;
+  hiddenZoneIds: string[];     // User-toggled off zones
+  customZones: DesignZone[];   // User-added custom zones
+}
+
+// ------------------------------------------------------------------
 // Design Canvas
 // ------------------------------------------------------------------
 export interface DesignElement {
