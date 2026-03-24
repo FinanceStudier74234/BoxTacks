@@ -19,7 +19,7 @@ export const sampleCategories: Category[] = [
     items: [
       {
         id: 'item-pnl-hoodie',
-        name: 'PNL Hoodie',
+        name: 'Classic Hoodie',
         categoryId: 'cat-apparel',
         sku: 'APP-HOODIE-001',
         status: 'production-ready',
@@ -45,7 +45,7 @@ export const sampleCategories: Category[] = [
           currency: 'USD',
         },
         manufacturing: {
-          supplierName: 'Alliance Garments Co.',
+          supplierName: 'Pacific Garments Ltd.',
           moq: 50,
           leadTime: '18-22 business days',
           productionNotes: 'Sample approved. Ready for bulk production.',
@@ -53,11 +53,11 @@ export const sampleCategories: Category[] = [
           sampleStatus: 'approved',
           revisionApproval: 'v3 approved by Brand Director',
           packagingRequirements: 'Individual poly bags, branded sticker seal',
-          contactEmail: 'orders@alliancegarments.com',
+          contactEmail: 'orders@pacificgarments.com',
         },
         revisionHistory: [
-          { id: uuidv4(), version: 'v1.0', note: 'Initial sample', date: '2024-01-15', author: 'Alex' },
-          { id: uuidv4(), version: 'v2.0', note: 'Adjusted chest logo placement', date: '2024-02-01', author: 'Alex' },
+          { id: uuidv4(), version: 'v1.0', note: 'Initial sample', date: '2024-01-15', author: 'Design Team' },
+          { id: uuidv4(), version: 'v2.0', note: 'Adjusted chest logo placement', date: '2024-02-01', author: 'Design Team' },
           { id: uuidv4(), version: 'v3.0', note: 'Final approval - color match correct', date: '2024-02-20', author: 'Brand Director' },
         ],
         designData: {
@@ -72,7 +72,7 @@ export const sampleCategories: Category[] = [
       },
       {
         id: 'item-sig-tee',
-        name: 'Signature Tee',
+        name: 'Essential Tee',
         categoryId: 'cat-apparel',
         sku: 'APP-TEE-001',
         status: 'approved',
@@ -98,7 +98,7 @@ export const sampleCategories: Category[] = [
           currency: 'USD',
         },
         manufacturing: {
-          supplierName: 'Alliance Garments Co.',
+          supplierName: 'Pacific Garments Ltd.',
           moq: 100,
           leadTime: '14-18 business days',
           productionNotes: 'Standard order. Fast turnaround.',
@@ -108,8 +108,8 @@ export const sampleCategories: Category[] = [
           packagingRequirements: 'Polybag with hang tag',
         },
         revisionHistory: [
-          { id: uuidv4(), version: 'v1.0', note: 'Initial design', date: '2024-01-20', author: 'Alex' },
-          { id: uuidv4(), version: 'v2.0', note: 'Logo repositioned to center chest', date: '2024-02-10', author: 'Alex' },
+          { id: uuidv4(), version: 'v1.0', note: 'Initial design', date: '2024-01-20', author: 'Design Team' },
+          { id: uuidv4(), version: 'v2.0', note: 'Logo repositioned to center chest', date: '2024-02-10', author: 'Design Team' },
         ],
         designData: {
           elements: [],
@@ -123,7 +123,7 @@ export const sampleCategories: Category[] = [
       },
       {
         id: 'item-options-hoodie',
-        name: 'Options Hoodie',
+        name: 'Limited Hoodie',
         categoryId: 'cat-apparel',
         sku: 'APP-HOODIE-002',
         status: 'in-revision',
@@ -149,7 +149,7 @@ export const sampleCategories: Category[] = [
           currency: 'USD',
         },
         manufacturing: {
-          supplierName: 'Premium Stitch House',
+          supplierName: 'Artisan Stitch Co.',
           moq: 30,
           leadTime: '25-30 business days',
           productionNotes: 'Sample #2 received. Color needs adjustment.',
@@ -159,8 +159,8 @@ export const sampleCategories: Category[] = [
           packagingRequirements: 'Custom box with tissue paper',
         },
         revisionHistory: [
-          { id: uuidv4(), version: 'v1.0', note: 'First sample - too light', date: '2024-03-01', author: 'Alex' },
-          { id: uuidv4(), version: 'v2.0', note: 'Color revised - waiting new sample', date: '2024-03-15', author: 'Alex' },
+          { id: uuidv4(), version: 'v1.0', note: 'First sample - too light', date: '2024-03-01', author: 'Design Team' },
+          { id: uuidv4(), version: 'v2.0', note: 'Color revised - waiting new sample', date: '2024-03-15', author: 'Design Team' },
         ],
         designData: {
           elements: [],
@@ -340,7 +340,7 @@ export const sampleCategories: Category[] = [
     items: [
       {
         id: 'item-pnl-notebook',
-        name: 'PNL Notebook',
+        name: 'Premium Notebook',
         categoryId: 'cat-stationery',
         sku: 'STA-NOTE-001',
         status: 'production-ready',

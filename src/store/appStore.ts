@@ -92,6 +92,10 @@ interface AppStore extends AppUIState {
   pendingCategoryId: string | null;
   pendingProductType: string | null;
 
+  // Demo mode
+  isDemoMode: boolean;
+  toggleDemoMode: () => void;
+
   // Hydration flag
   _hasHydrated: boolean;
 }
@@ -104,6 +108,7 @@ const persistToStorage = () => {
       categories: state.categories,
       assets: state.assets,
       notifications: state.notifications,
+      isDemoMode: state.isDemoMode,
     };
     localStorage.setItem('boxtacks-data', JSON.stringify(data));
   } catch {
@@ -111,7 +116,7 @@ const persistToStorage = () => {
   }
 };
 
-const loadFromStorage = (): Partial<Pick<AppStore, 'categories' | 'assets' | 'notifications'>> | null => {
+const loadFromStorage = (): Partial<Pick<AppStore, 'categories' | 'assets' | 'notifications' | 'isDemoMode'>> | null => {
   try {
     const raw = localStorage.getItem('boxtacks-data');
     if (raw) return JSON.parse(raw);
@@ -126,6 +131,7 @@ export const useAppStore = create<AppStore>((set, get) => {
   let initialCategories = sampleCategories;
   let initialAssets = sampleAssets;
   let initialNotifications: AppNotification[] = [];
+  let initialIsDemoMode = true;
 
   if (typeof window !== 'undefined') {
     const saved = loadFromStorage();
@@ -133,6 +139,7 @@ export const useAppStore = create<AppStore>((set, get) => {
       if (saved.categories && saved.categories.length > 0) initialCategories = saved.categories;
       if (saved.assets && saved.assets.length > 0) initialAssets = saved.assets;
       if (saved.notifications) initialNotifications = saved.notifications;
+      if (typeof saved.isDemoMode === 'boolean') initialIsDemoMode = saved.isDemoMode;
     }
   }
 
@@ -155,6 +162,7 @@ export const useAppStore = create<AppStore>((set, get) => {
     lastSaved: new Date().toISOString(),
     notification: null,
     notifications: initialNotifications,
+    isDemoMode: initialIsDemoMode,
     pendingCategoryId: null,
     pendingProductType: null,
     _hasHydrated: false,
@@ -217,6 +225,11 @@ export const useAppStore = create<AppStore>((set, get) => {
       set({ isDirty: false, lastSaved: new Date().toISOString() });
       persistToStorage();
       get().setNotification({ type: 'success', message: 'Project saved successfully' });
+    },
+
+    toggleDemoMode: () => {
+      set((state) => ({ isDemoMode: !state.isDemoMode }));
+      persistToStorage();
     },
 
     // ---- Notification History ----

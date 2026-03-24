@@ -104,7 +104,7 @@ export default function LeftSidebar() {
         </div>
 
         {/* Categories List */}
-        <div className="flex-1 overflow-y-auto scrollbar-thin px-3 pb-3">
+        <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin px-3 pb-3">
           {/* Section label */}
           <div className="flex items-center justify-between py-2 mb-1">
             <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider px-1">

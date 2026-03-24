@@ -171,6 +171,7 @@ export default function TopNavigation() {
     getActiveItem, setNotification,
     getAllItems, getUnreadCount,
     notifications, markAllNotificationsRead, markNotificationRead, clearNotifications,
+    isDemoMode, toggleDemoMode,
   } = useAppStore();
 
   const [showNewMenu, setShowNewMenu]       = useState(false);
@@ -443,6 +444,19 @@ export default function TopNavigation() {
           </AnimatePresence>
           {showExportMenu && <div className="fixed inset-0 z-40" onClick={() => setShowExportMenu(false)} />}
         </div>
+
+        {/* Demo / Personal mode toggle */}
+        <button
+          onClick={toggleDemoMode}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+            isDemoMode
+              ? 'bg-amber-50 text-amber-600 border border-amber-200 hover:bg-amber-100'
+              : 'bg-slate-50 text-slate-500 border border-slate-200 hover:bg-slate-100 hover:text-slate-700'
+          }`}
+          aria-label={isDemoMode ? 'Switch to My Products' : 'Switch to Demo Mode'}
+        >
+          {isDemoMode ? 'Demo Mode' : 'My Products'}
+        </button>
 
         {/* Notifications bell with dropdown */}
         <div className="relative">
