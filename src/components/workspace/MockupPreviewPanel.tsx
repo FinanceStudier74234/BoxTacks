@@ -175,14 +175,49 @@ export default function MockupPreviewPanel({ item }: Props) {
         {/* Export */}
         <div className="p-4 border-t border-slate-50 space-y-2">
           <button
-            onClick={() => setNotification({ type: 'info', message: 'Mockup export coming soon!' })}
+            onClick={() => {
+              // Export the mockup SVG as PNG
+              const svgEl = document.querySelector('.relative.z-10 svg') as SVGSVGElement | null;
+              if (svgEl) {
+                const svgData = new XMLSerializer().serializeToString(svgEl);
+                const canvas = document.createElement('canvas');
+                canvas.width = 1200;
+                canvas.height = 1600;
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                  ctx.fillStyle = bgStyle === 'clean' ? '#FFFFFF' : bgStyle === 'gradient' ? '#EEF2FF' : '#E2E8F0';
+                  ctx.fillRect(0, 0, 1200, 1600);
+                  const img = new window.Image();
+                  const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+                  const url = URL.createObjectURL(blob);
+                  img.onload = () => {
+                    const scale = Math.min(1000 / img.width, 1400 / img.height);
+                    const w = img.width * scale;
+                    const h = img.height * scale;
+                    ctx.drawImage(img, (1200 - w) / 2, (1600 - h) / 2, w, h);
+                    URL.revokeObjectURL(url);
+                    const link = document.createElement('a');
+                    link.download = `${item.name.replace(/\s+/g, '-').toLowerCase()}-mockup.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                    setNotification({ type: 'success', message: `Exported "${item.name}" mockup` });
+                  };
+                  img.src = url;
+                }
+              } else {
+                setNotification({ type: 'info', message: 'Could not find mockup to export' });
+              }
+            }}
             className="w-full flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-xs font-semibold rounded-xl shadow-sm hover:opacity-90 transition-all"
           >
             <Download size={13} />
             Export Mockup
           </button>
           <button
-            onClick={() => setNotification({ type: 'info', message: 'Mockup regenerated!' })}
+            onClick={() => {
+              setProductColor(item.color || '#1E293B');
+              setNotification({ type: 'success', message: 'Mockup refreshed' });
+            }}
             className="w-full flex items-center justify-center gap-2 py-2 border border-slate-200 text-slate-600 text-xs font-medium rounded-xl hover:bg-slate-50 transition-colors"
           >
             <RefreshCw size={12} />

@@ -18,45 +18,7 @@ import {
 import { useAppStore } from '@/store/appStore';
 import type { ProductStatus } from '@/types';
 import { calcTotalCost, calcMargin, getRelativeTime } from '@/lib/utils';
-
-// ─────────────────────────────────────────────────────────────────────────────
-// CONSTANTS
-// ─────────────────────────────────────────────────────────────────────────────
-const STATUS_COLOR: Record<ProductStatus, string> = {
-  idea: '#94a3b8',
-  designing: '#3b82f6',
-  'sample-ordered': '#f59e0b',
-  'in-revision': '#f97316',
-  approved: '#10b981',
-  'production-ready': '#6366f1',
-};
-
-const STATUS_LABEL: Record<ProductStatus, string> = {
-  idea: 'Idea',
-  designing: 'Designing',
-  'sample-ordered': 'Sample Ordered',
-  'in-revision': 'In Revision',
-  approved: 'Approved',
-  'production-ready': 'Production Ready',
-};
-
-const STATUS_BG: Record<ProductStatus, string> = {
-  idea: '#f1f5f9',
-  designing: '#eff6ff',
-  'sample-ordered': '#fffbeb',
-  'in-revision': '#fff7ed',
-  approved: '#ecfdf5',
-  'production-ready': '#eef2ff',
-};
-
-const ALL_STATUSES: ProductStatus[] = [
-  'idea',
-  'designing',
-  'sample-ordered',
-  'in-revision',
-  'approved',
-  'production-ready',
-];
+import { STATUS_COLOR, STATUS_LABEL, STATUS_BG, ALL_STATUSES } from '@/constants/statusConfig';
 
 const PIPELINE_STATUSES: ProductStatus[] = ['designing', 'sample-ordered', 'in-revision'];
 

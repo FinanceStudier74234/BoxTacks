@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '@/store/appStore';
 import { getRelativeTime } from '@/lib/utils';
+import { STATUS_COLOR as STATUS_COLORS, STATUS_LABEL as STATUS_LABELS } from '@/constants/statusConfig';
 import type { ProductItem } from '@/types';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -30,27 +31,6 @@ function getGreeting(): string {
   if (hour < 18) return 'Good afternoon';
   return 'Good evening';
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// STATUS COLORS
-// ─────────────────────────────────────────────────────────────────────────────
-const STATUS_COLORS: Record<string, string> = {
-  idea: '#94a3b8',
-  designing: '#3b82f6',
-  'sample-ordered': '#f59e0b',
-  'in-revision': '#f97316',
-  approved: '#10b981',
-  'production-ready': '#6366f1',
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  idea: 'Idea',
-  designing: 'Designing',
-  'sample-ordered': 'Sample Ordered',
-  'in-revision': 'In Revision',
-  approved: 'Approved',
-  'production-ready': 'Production Ready',
-};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PRODUCT TYPE CATALOG

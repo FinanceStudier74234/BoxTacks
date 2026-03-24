@@ -255,6 +255,17 @@ export interface Project {
 }
 
 // ------------------------------------------------------------------
+// Notifications
+// ------------------------------------------------------------------
+export interface AppNotification {
+  id: string;
+  type: 'success' | 'error' | 'info';
+  message: string;
+  read: boolean;
+  createdAt: string;
+}
+
+// ------------------------------------------------------------------
 // UI State
 // ------------------------------------------------------------------
 export interface AppUIState {
@@ -274,4 +285,5 @@ export interface AppUIState {
   isDirty: boolean;
   lastSaved: string | null;
   notification: { type: 'success' | 'error' | 'info'; message: string } | null;
+  notifications: AppNotification[];
 }

@@ -16,108 +16,14 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '@/store/appStore';
 import type { ProductItem, ProductStatus } from '@/types';
-
-// ─────────────────────────────────────────────────────────────────────────────
-// STATUS CONFIG
-// ─────────────────────────────────────────────────────────────────────────────
-interface StatusConfig {
-  label: string;
-  color: string;
-  bg: string;
-  border: string;
-  headerBg: string;
-}
-
-const STATUS_CONFIG: Record<ProductStatus, StatusConfig> = {
-  idea: {
-    label: 'Idea',
-    color: '#94a3b8',
-    bg: 'bg-slate-50',
-    border: 'border-slate-200',
-    headerBg: 'bg-slate-100',
-  },
-  designing: {
-    label: 'Designing',
-    color: '#3b82f6',
-    bg: 'bg-blue-50',
-    border: 'border-blue-200',
-    headerBg: 'bg-blue-50',
-  },
-  'sample-ordered': {
-    label: 'Sample Ordered',
-    color: '#f59e0b',
-    bg: 'bg-amber-50',
-    border: 'border-amber-200',
-    headerBg: 'bg-amber-50',
-  },
-  'in-revision': {
-    label: 'In Revision',
-    color: '#f97316',
-    bg: 'bg-orange-50',
-    border: 'border-orange-200',
-    headerBg: 'bg-orange-50',
-  },
-  approved: {
-    label: 'Approved',
-    color: '#10b981',
-    bg: 'bg-emerald-50',
-    border: 'border-emerald-200',
-    headerBg: 'bg-emerald-50',
-  },
-  'production-ready': {
-    label: 'Production Ready',
-    color: '#6366f1',
-    bg: 'bg-indigo-50',
-    border: 'border-indigo-200',
-    headerBg: 'bg-indigo-50',
-  },
-};
-
-const STATUS_ORDER: ProductStatus[] = [
-  'idea',
-  'designing',
-  'sample-ordered',
-  'in-revision',
-  'approved',
-  'production-ready',
-];
-
-// ─────────────────────────────────────────────────────────────────────────────
-// PRODUCT TYPE EMOJI MAP
-// ─────────────────────────────────────────────────────────────────────────────
-const PRODUCT_TYPE_EMOJI: Record<string, string> = {
-  Hoodie: '🧥',
-  'T-Shirt': '👕',
-  Notebook: '📒',
-  'Mailer Box': '📦',
-  'Hang Tag': '🏷️',
-  Poster: '🖼️',
-  Planner: '📅',
-  'Insert Card': '💌',
-  'Desk Mat': '🖥️',
-  'Tote Bag': '👜',
-  Sweatshirt: '🥋',
-  Custom: '✨',
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
-// SAMPLE STATUS DOT
-// ─────────────────────────────────────────────────────────────────────────────
-const SAMPLE_STATUS_COLORS: Record<string, string> = {
-  'not-started': '#cbd5e1',
-  requested: '#93c5fd',
-  received: '#fcd34d',
-  approved: '#34d399',
-  rejected: '#f87171',
-};
-
-const SAMPLE_STATUS_LABELS: Record<string, string> = {
-  'not-started': 'No Sample',
-  requested: 'Requested',
-  received: 'Received',
-  approved: 'Approved',
-  rejected: 'Rejected',
-};
+import {
+  STATUS_CONFIG,
+  ALL_STATUSES as STATUS_ORDER,
+  PRODUCT_TYPE_EMOJI,
+  SAMPLE_STATUS_COLORS,
+  SAMPLE_STATUS_LABELS,
+  type StatusEntry,
+} from '@/constants/statusConfig';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ANIMATION VARIANTS
@@ -148,7 +54,7 @@ function KanbanCard({
   onOpen,
 }: {
   item: ProductItem;
-  statusCfg: StatusConfig;
+  statusCfg: StatusEntry;
   categoryName: string;
   categoryColor: string;
   onOpen: () => void;
