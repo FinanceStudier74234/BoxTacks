@@ -68,7 +68,7 @@ type ViewMode = 'grid' | 'list';
 function InlineStatusBadge({ status }: { status: ProductStatus }) {
   return (
     <span
-      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
+      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap"
       style={{
         backgroundColor: STATUS_BG[status],
         color: STATUS_COLOR[status],
@@ -305,7 +305,7 @@ function ProductListRow({ item, category, onOpen, index }: ListRowProps) {
       </div>
 
       {/* Status */}
-      <div className="hidden md:block w-32 flex-shrink-0">
+      <div className="hidden md:block w-36 flex-shrink-0">
         <InlineStatusBadge status={item.status} />
       </div>
 
@@ -391,28 +391,43 @@ function EmptyInventory({ onAdd }: { onAdd: () => void }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // STAT PILL
 // ─────────────────────────────────────────────────────────────────────────────
-function StatPill({ status, count }: { status: ProductStatus; count: number }) {
+function StatPill({ status, count, active, onClick }: { status: ProductStatus; count: number; active: boolean; onClick: () => void }) {
   return (
-    <div
-      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border"
-      style={{
-        backgroundColor: STATUS_BG[status],
-        borderColor: `${STATUS_COLOR[status]}30`,
-        color: STATUS_COLOR[status],
-      }}
+    <motion.button
+      whileHover={{ scale: 1.03 }}
+      whileTap={{ scale: 0.97 }}
+      onClick={onClick}
+      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-150 focus:outline-none"
+      style={
+        active
+          ? {
+              backgroundColor: STATUS_COLOR[status],
+              borderColor: STATUS_COLOR[status],
+              color: '#fff',
+            }
+          : {
+              backgroundColor: STATUS_BG[status],
+              borderColor: `${STATUS_COLOR[status]}30`,
+              color: STATUS_COLOR[status],
+            }
+      }
     >
       <span
         className="w-2 h-2 rounded-full flex-shrink-0"
-        style={{ backgroundColor: STATUS_COLOR[status] }}
+        style={{ backgroundColor: active ? '#ffffff80' : STATUS_COLOR[status] }}
       />
       <span>{STATUS_LABEL[status]}</span>
       <span
-        className="font-bold ml-0.5 px-1.5 py-0.5 rounded-full text-white text-[10px]"
-        style={{ backgroundColor: STATUS_COLOR[status] }}
+        className="font-bold ml-0.5 px-1.5 py-0.5 rounded-full text-[10px]"
+        style={
+          active
+            ? { backgroundColor: 'rgba(255,255,255,0.25)', color: '#fff' }
+            : { backgroundColor: STATUS_COLOR[status], color: '#fff' }
+        }
       >
         {count}
       </span>
-    </div>
+    </motion.button>
   );
 }
 
@@ -606,84 +621,94 @@ export default function InventoryView() {
         {/* ── Stats Strip ─────────────────────────────────────────────── */}
         <div className="flex flex-wrap gap-2 mt-4">
           {ALL_STATUSES.map((status) => (
-            <button
+            <StatPill
               key={status}
-              onClick={() =>
-                setFilterStatus(filterStatus === status ? '' : status)
-              }
-              className="focus:outline-none"
-            >
-              <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-                <StatPill status={status} count={statusCounts[status]} />
-              </motion.div>
-            </button>
+              status={status}
+              count={statusCounts[status]}
+              active={filterStatus === status}
+              onClick={() => setFilterStatus(filterStatus === status ? '' : status)}
+            />
           ))}
         </div>
       </div>
 
       {/* ── Content ─────────────────────────────────────────────────────── */}
       <div className="px-6 py-6">
-        {filteredItems.length === 0 ? (
-          <EmptyInventory onAdd={() => openNewItemModal()} />
-        ) : viewMode === 'grid' ? (
-          /* GRID VIEW */
-          <motion.div
-            layout
-            className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-4"
-          >
-            <AnimatePresence mode="popLayout">
-              {filteredItems.map((item) => (
-                <ProductGridCard
-                  key={item.id}
-                  item={item}
-                  category={categoryMap[item.categoryId]}
-                  onOpen={() => handleOpenItem(item.id)}
-                />
-              ))}
-            </AnimatePresence>
-          </motion.div>
-        ) : (
-          /* LIST VIEW */
-          <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm">
-            {/* List header */}
-            <div className="flex items-center gap-4 px-4 py-2.5 bg-slate-50 border-b border-slate-100">
-              <div className="w-1 flex-shrink-0" />
-              <div className="flex-1 text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                Product
+        <AnimatePresence mode="wait">
+          {filteredItems.length === 0 ? (
+            <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <EmptyInventory onAdd={() => openNewItemModal()} />
+            </motion.div>
+          ) : viewMode === 'grid' ? (
+            /* GRID VIEW */
+            <motion.div
+              key="grid"
+              layout
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-4"
+            >
+              <AnimatePresence mode="popLayout">
+                {filteredItems.map((item) => (
+                  <ProductGridCard
+                    key={item.id}
+                    item={item}
+                    category={categoryMap[item.categoryId]}
+                    onOpen={() => handleOpenItem(item.id)}
+                  />
+                ))}
+              </AnimatePresence>
+            </motion.div>
+          ) : (
+            /* LIST VIEW */
+            <motion.div
+              key="list"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm"
+            >
+              {/* List header */}
+              <div className="flex items-center gap-4 px-4 py-2.5 bg-slate-50 border-b border-slate-100">
+                <div className="w-1 flex-shrink-0" />
+                <div className="flex-1 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  Product
+                </div>
+                <div className="hidden sm:block w-28 text-xs font-semibold text-slate-400 uppercase tracking-wider flex-shrink-0">
+                  Category
+                </div>
+                <div className="hidden md:block w-36 text-xs font-semibold text-slate-400 uppercase tracking-wider flex-shrink-0">
+                  Status
+                </div>
+                <div className="hidden lg:block w-24 text-xs font-semibold text-slate-400 uppercase tracking-wider flex-shrink-0">
+                  Type
+                </div>
+                <div className="hidden xl:block w-36 text-xs font-semibold text-slate-400 uppercase tracking-wider flex-shrink-0">
+                  Tags
+                </div>
+                <div className="hidden lg:block w-24 text-right text-xs font-semibold text-slate-400 uppercase tracking-wider flex-shrink-0">
+                  Unit Cost
+                </div>
+                <div className="hidden xl:block w-28 text-xs font-semibold text-slate-400 uppercase tracking-wider flex-shrink-0">
+                  Updated
+                </div>
+                <div className="w-20 flex-shrink-0" />
               </div>
-              <div className="hidden sm:block w-28 text-xs font-semibold text-slate-400 uppercase tracking-wider flex-shrink-0">
-                Category
-              </div>
-              <div className="hidden md:block w-32 text-xs font-semibold text-slate-400 uppercase tracking-wider flex-shrink-0">
-                Status
-              </div>
-              <div className="hidden lg:block w-24 text-xs font-semibold text-slate-400 uppercase tracking-wider flex-shrink-0">
-                Type
-              </div>
-              <div className="hidden xl:block w-36 text-xs font-semibold text-slate-400 uppercase tracking-wider flex-shrink-0">
-                Tags
-              </div>
-              <div className="hidden lg:block w-24 text-right text-xs font-semibold text-slate-400 uppercase tracking-wider flex-shrink-0">
-                Unit Cost
-              </div>
-              <div className="hidden xl:block w-28 text-xs font-semibold text-slate-400 uppercase tracking-wider flex-shrink-0">
-                Updated
-              </div>
-              <div className="w-20 flex-shrink-0" />
-            </div>
-            <AnimatePresence mode="popLayout">
-              {filteredItems.map((item, idx) => (
-                <ProductListRow
-                  key={item.id}
-                  item={item}
-                  category={categoryMap[item.categoryId]}
-                  onOpen={() => handleOpenItem(item.id)}
-                  index={idx}
-                />
-              ))}
-            </AnimatePresence>
-          </div>
-        )}
+              <AnimatePresence mode="popLayout">
+                {filteredItems.map((item, idx) => (
+                  <ProductListRow
+                    key={item.id}
+                    item={item}
+                    category={categoryMap[item.categoryId]}
+                    onOpen={() => handleOpenItem(item.id)}
+                    index={idx}
+                  />
+                ))}
+              </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

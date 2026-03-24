@@ -6,18 +6,19 @@ import {
   Search, Bell, Plus, Download, Save, Check,
   LayoutDashboard, Package, Layers, Factory,
   Image, BarChart3, BookTemplate, Menu, X,
-  ChevronDown, Sparkles, Home
+  ChevronDown, Sparkles, Home, type LucideIcon,
 } from 'lucide-react';
 import { useAppStore } from '@/store/appStore';
+import type { AppView } from '@/types';
 
-const NAV_TABS = [
-  { id: 'home',          label: 'Home',          icon: Home,          view: 'dashboard'      },
-  { id: 'Workspace',     label: 'Workspace',     icon: LayoutDashboard, view: 'workspace'    },
-  { id: 'Templates',     label: 'Templates',     icon: BookTemplate,  view: 'templates'      },
-  { id: 'Manufacturing', label: 'Manufacturing', icon: Factory,       view: 'dashboard'      },
-  { id: 'Inventory',     label: 'Inventory',     icon: Package,       view: 'dashboard'      },
-  { id: 'Brand Assets',  label: 'Brand Assets',  icon: Image,         view: 'dashboard'      },
-  { id: 'Analytics',     label: 'Analytics',     icon: BarChart3,     view: 'dashboard'      },
+const NAV_TABS: { id: string; label: string; icon: LucideIcon; view: AppView }[] = [
+  { id: 'home',          label: 'Home',          icon: Home,            view: 'dashboard'   },
+  { id: 'workspace',     label: 'Workspace',     icon: LayoutDashboard, view: 'workspace'   },
+  { id: 'templates',     label: 'Templates',     icon: BookTemplate,    view: 'templates'   },
+  { id: 'manufacturing', label: 'Manufacturing', icon: Factory,         view: 'manufacturing'},
+  { id: 'inventory',     label: 'Inventory',     icon: Package,         view: 'inventory'   },
+  { id: 'brand-assets',  label: 'Brand Assets',  icon: Image,           view: 'brand-assets'},
+  { id: 'analytics',     label: 'Analytics',     icon: BarChart3,       view: 'analytics'   },
 ];
 
 export default function TopNavigation() {
@@ -31,25 +32,26 @@ export default function TopNavigation() {
     getActiveItem, setNotification,
   } = useAppStore();
 
-  const [showNewMenu, setShowNewMenu] = useState(false);
+  const [showNewMenu, setShowNewMenu]       = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
-  const [searchFocused, setSearchFocused] = useState(false);
+  const [searchFocused, setSearchFocused]   = useState(false);
 
   const activeItem = getActiveItem();
 
   const handleNavClick = (tab: typeof NAV_TABS[0]) => {
     setActiveNavTab(tab.id);
-    setCurrentView(tab.view as any);
+    setCurrentView(tab.view);
   };
 
   return (
     <header className="h-14 bg-white border-b border-slate-100 flex items-center px-3 gap-2 z-40 relative shadow-sm flex-shrink-0">
 
-      {/* ── Sidebar toggle + Logo ── */}
+      {/* ── Sidebar toggle + Logo ─────────────────────────────────────────── */}
       <div className="flex items-center gap-2 flex-shrink-0">
         <button
           onClick={() => setSidebarExpanded(!sidebarExpanded)}
           className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors"
+          aria-label="Toggle sidebar"
         >
           {sidebarExpanded ? <X size={16} /> : <Menu size={16} />}
         </button>
@@ -59,7 +61,7 @@ export default function TopNavigation() {
           onClick={() => { setCurrentView('dashboard'); setActiveNavTab('home'); }}
           className="flex items-center gap-2 group"
         >
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-sm group-hover:shadow-brand transition-shadow">
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-sm">
             <span className="text-white font-extrabold text-xs">BT</span>
           </div>
           <span className="font-extrabold text-slate-900 text-sm hidden sm:block tracking-tight">
@@ -67,35 +69,39 @@ export default function TopNavigation() {
           </span>
         </button>
 
-        {/* Workspace breadcrumb (shown when in workspace view) */}
+        {/* Breadcrumb when in workspace */}
         {currentView === 'workspace' && activeItem && (
           <div className="hidden md:flex items-center gap-1.5 text-xs text-slate-400 ml-1 border-l border-slate-100 pl-3">
-            <span className="font-medium text-slate-600 truncate max-w-28">{activeItem.name}</span>
+            <span className="text-[10px] text-slate-400">/</span>
+            <span className="font-semibold text-slate-600 truncate max-w-32">{activeItem.name}</span>
           </div>
         )}
       </div>
 
-      {/* ── Nav tabs (center, hidden on small screens) ── */}
+      {/* ── Nav tabs ─────────────────────────────────────────────────────── */}
       <nav className="hidden lg:flex items-center gap-0.5 flex-1 justify-center">
-        {NAV_TABS.slice(0, 5).map((tab) => {
+        {NAV_TABS.map((tab) => {
           const Icon = tab.icon;
-          const isActive = activeNavTab === tab.id;
+          const isActive = activeNavTab === tab.id ||
+            (tab.view === currentView && !['home', 'workspace', 'templates', 'manufacturing', 'inventory', 'brand-assets', 'analytics'].includes(activeNavTab) && tab.view === currentView);
+          const reallyActive = activeNavTab === tab.id;
           return (
             <button
               key={tab.id}
               onClick={() => handleNavClick(tab)}
               className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
-                isActive
+                reallyActive
                   ? 'text-indigo-600 bg-indigo-50'
                   : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
               }`}
             >
               <Icon size={13} />
               {tab.label}
-              {isActive && (
+              {reallyActive && (
                 <motion.div
-                  layoutId="navIndicator"
-                  className="absolute -bottom-[9px] left-0 right-0 h-0.5 bg-indigo-500 rounded-full"
+                  layoutId="navUnderline"
+                  className="absolute -bottom-[9px] left-1 right-1 h-0.5 bg-indigo-500 rounded-full"
+                  transition={{ type: 'spring', stiffness: 500, damping: 35 }}
                 />
               )}
             </button>
@@ -103,7 +109,7 @@ export default function TopNavigation() {
         })}
       </nav>
 
-      {/* ── Right Controls ── */}
+      {/* ── Right controls ───────────────────────────────────────────────── */}
       <div className="flex items-center gap-1.5 flex-shrink-0 ml-auto">
 
         {/* Search */}
@@ -140,11 +146,11 @@ export default function TopNavigation() {
           <span className="hidden sm:block">{isDirty ? 'Save' : 'Saved'}</span>
         </button>
 
-        {/* ── NEW button ── */}
+        {/* Create dropdown */}
         <div className="relative">
           <button
             onClick={() => setShowNewMenu(!showNewMenu)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl text-xs font-bold shadow-sm hover:shadow-brand hover:opacity-95 transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl text-xs font-bold shadow-sm hover:opacity-95 transition-all"
           >
             <Plus size={13} />
             <span className="hidden sm:block">Create</span>
@@ -157,51 +163,46 @@ export default function TopNavigation() {
                 initial={{ opacity: 0, y: 6, scale: 0.97 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 6, scale: 0.97 }}
-                transition={{ duration: 0.15 }}
+                transition={{ duration: 0.14 }}
                 className="absolute right-0 top-full mt-2 w-52 bg-white border border-slate-100 rounded-2xl shadow-xl z-50 overflow-hidden py-2"
               >
-                {/* New design CTA */}
                 <div className="px-4 pt-1 pb-2 border-b border-slate-50">
                   <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Start designing</p>
                 </div>
                 <button
-                  onClick={() => {
-                    setCurrentView('dashboard');
-                    setActiveNavTab('home');
-                    setShowNewMenu(false);
-                  }}
-                  className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors flex items-center gap-3"
+                  onClick={() => { setCurrentView('dashboard'); setActiveNavTab('home'); setShowNewMenu(false); }}
+                  className="w-full text-left px-4 py-2.5 hover:bg-indigo-50 transition-colors flex items-center gap-3"
                 >
                   <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0">
                     <Sparkles size={12} className="text-white" />
                   </div>
                   <div>
-                    <p className="font-semibold text-xs">New design</p>
+                    <p className="font-semibold text-xs text-slate-700">New design</p>
                     <p className="text-[10px] text-slate-400">Pick a product type</p>
                   </div>
                 </button>
                 <button
                   onClick={() => { openNewItemModal(); setShowNewMenu(false); }}
-                  className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors flex items-center gap-3"
+                  className="w-full text-left px-4 py-2.5 hover:bg-indigo-50 transition-colors flex items-center gap-3"
                 >
                   <div className="w-7 h-7 rounded-xl bg-purple-100 flex items-center justify-center flex-shrink-0">
                     <Package size={12} className="text-purple-600" />
                   </div>
                   <div>
-                    <p className="font-semibold text-xs">Blank product</p>
+                    <p className="font-semibold text-xs text-slate-700">Blank product</p>
                     <p className="text-[10px] text-slate-400">Start from scratch</p>
                   </div>
                 </button>
                 <button
                   onClick={() => { openNewCategoryModal(); setShowNewMenu(false); }}
-                  className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors flex items-center gap-3"
+                  className="w-full text-left px-4 py-2.5 hover:bg-indigo-50 transition-colors flex items-center gap-3"
                 >
                   <div className="w-7 h-7 rounded-xl bg-teal-100 flex items-center justify-center flex-shrink-0">
                     <Layers size={12} className="text-teal-600" />
                   </div>
                   <div>
-                    <p className="font-semibold text-xs">New category</p>
-                    <p className="text-[10px] text-slate-400">Organise products</p>
+                    <p className="font-semibold text-xs text-slate-700">New category</p>
+                    <p className="text-[10px] text-slate-400">Organise your products</p>
                   </div>
                 </button>
               </motion.div>
@@ -210,7 +211,7 @@ export default function TopNavigation() {
           {showNewMenu && <div className="fixed inset-0 z-40" onClick={() => setShowNewMenu(false)} />}
         </div>
 
-        {/* Export */}
+        {/* Export dropdown */}
         <div className="relative">
           <button
             onClick={() => setShowExportMenu(!showExportMenu)}
@@ -225,16 +226,16 @@ export default function TopNavigation() {
                 initial={{ opacity: 0, y: 6, scale: 0.97 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 6, scale: 0.97 }}
-                className="absolute right-0 top-full mt-2 w-40 bg-white border border-slate-100 rounded-2xl shadow-xl z-50 overflow-hidden py-1"
+                className="absolute right-0 top-full mt-2 w-44 bg-white border border-slate-100 rounded-2xl shadow-xl z-50 overflow-hidden py-1"
               >
-                {['Export PNG', 'Export PDF', 'Export Mockup', 'Export Specs'].map((item) => (
+                {['Export PNG', 'Export PDF', 'Export Mockup', 'Export Spec Sheet'].map((item) => (
                   <button
                     key={item}
                     onClick={() => {
                       setNotification({ type: 'info', message: `${item} — coming soon!` });
                       setShowExportMenu(false);
                     }}
-                    className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                    className="w-full text-left px-4 py-2.5 text-xs text-slate-700 hover:bg-slate-50 transition-colors"
                   >
                     {item}
                   </button>

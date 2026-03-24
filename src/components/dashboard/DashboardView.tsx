@@ -1,811 +1,870 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Search, ArrowRight, Plus, Star, Clock,
-  Sparkles, TrendingUp, Package, Layers,
-  CheckCircle, BarChart3, ChevronRight, Zap,
+  Search,
+  Plus,
+  ArrowRight,
+  Clock,
+  Star,
+  Sparkles,
+  Package,
+  CheckCircle,
+  Zap,
+  Layers,
+  BarChart3,
+  Factory,
+  ChevronRight,
 } from 'lucide-react';
 import { useAppStore } from '@/store/appStore';
-import StatusBadge from '@/components/ui/StatusBadge';
-import { formatCurrency, calcTotalCost, calcMargin, getRelativeTime } from '@/lib/utils';
+import { getRelativeTime } from '@/lib/utils';
 import type { ProductItem } from '@/types';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PRODUCT TYPE CATALOG — every tile on the home screen
+// HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
-const PRODUCT_TYPE_CATALOG = [
+function getGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 18) return 'Good afternoon';
+  return 'Good evening';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STATUS COLORS
+// ─────────────────────────────────────────────────────────────────────────────
+const STATUS_COLORS: Record<string, string> = {
+  idea: '#94a3b8',
+  designing: '#3b82f6',
+  'sample-ordered': '#f59e0b',
+  'in-revision': '#f97316',
+  approved: '#10b981',
+  'production-ready': '#6366f1',
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  idea: 'Idea',
+  designing: 'Designing',
+  'sample-ordered': 'Sample Ordered',
+  'in-revision': 'In Revision',
+  approved: 'Approved',
+  'production-ready': 'Production Ready',
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PRODUCT TYPE CATALOG
+// ─────────────────────────────────────────────────────────────────────────────
+const PRODUCT_TYPES = [
   {
     id: 'Hoodie',
     label: 'Hoodie',
     emoji: '🧥',
     description: 'Fleece & pullover styles',
-    gradient: 'from-slate-700 via-slate-800 to-slate-900',
-    glow: 'rgba(71,85,105,0.45)',
+    gradientFrom: '#1e293b',
+    gradientTo: '#0f172a',
     category: 'Apparel',
-    popular: true,
-    tag: 'Most Popular',
+    badge: 'Popular',
   },
   {
     id: 'T-Shirt',
     label: 'T-Shirt',
     emoji: '👕',
-    description: 'Crew neck & v-neck',
-    gradient: 'from-indigo-500 via-indigo-600 to-purple-700',
-    glow: 'rgba(99,102,241,0.45)',
+    description: 'Classic & fitted cuts',
+    gradientFrom: '#4f46e5',
+    gradientTo: '#7c3aed',
     category: 'Apparel',
-    popular: true,
-    tag: 'Best Seller',
+    badge: 'Best Seller',
   },
   {
     id: 'Notebook',
     label: 'Notebook',
     emoji: '📒',
-    description: 'Journals & hardcovers',
-    gradient: 'from-emerald-500 via-teal-500 to-cyan-600',
-    glow: 'rgba(16,185,129,0.4)',
+    description: 'Lined & dotted pages',
+    gradientFrom: '#059669',
+    gradientTo: '#0d9488',
     category: 'Stationery',
-    popular: true,
-    tag: '',
+    badge: null,
   },
   {
     id: 'Mailer Box',
     label: 'Mailer Box',
-    emoji: '📮',
-    description: 'Shipping & gift mailers',
-    gradient: 'from-sky-500 via-blue-500 to-indigo-600',
-    glow: 'rgba(14,165,233,0.4)',
+    emoji: '📦',
+    description: 'Custom branded shipping',
+    gradientFrom: '#0284c7',
+    gradientTo: '#6366f1',
     category: 'Packaging',
-    popular: false,
-    tag: '',
+    badge: null,
   },
   {
     id: 'Hang Tag',
     label: 'Hang Tag',
     emoji: '🏷️',
-    description: 'Premium labels & tags',
-    gradient: 'from-stone-500 via-stone-600 to-neutral-800',
-    glow: 'rgba(120,113,108,0.4)',
+    description: 'Labels & price tags',
+    gradientFrom: '#78716c',
+    gradientTo: '#44403c',
     category: 'Packaging',
-    popular: false,
-    tag: '',
+    badge: null,
   },
   {
     id: 'Poster',
     label: 'Poster',
     emoji: '🖼️',
-    description: 'Art prints & promos',
-    gradient: 'from-rose-400 via-pink-500 to-fuchsia-600',
-    glow: 'rgba(244,63,94,0.4)',
-    category: 'Poster',
-    popular: false,
-    tag: '',
+    description: 'Wall art & prints',
+    gradientFrom: '#e11d48',
+    gradientTo: '#a855f7',
+    category: 'Print',
+    badge: null,
   },
   {
     id: 'Planner',
     label: 'Planner',
     emoji: '📅',
-    description: 'Annual & weekly spreads',
-    gradient: 'from-amber-400 via-orange-500 to-red-500',
-    glow: 'rgba(245,158,11,0.4)',
+    description: 'Daily & weekly layouts',
+    gradientFrom: '#d97706',
+    gradientTo: '#dc2626',
     category: 'Stationery',
-    popular: false,
-    tag: '',
+    badge: null,
   },
   {
     id: 'Insert Card',
     label: 'Insert Card',
     emoji: '💌',
-    description: 'Thank you & gift inserts',
-    gradient: 'from-pink-400 via-rose-500 to-red-400',
-    glow: 'rgba(236,72,153,0.4)',
+    description: 'Thank you & promo cards',
+    gradientFrom: '#db2777',
+    gradientTo: '#e11d48',
     category: 'Packaging',
-    popular: false,
-    tag: '',
+    badge: null,
   },
   {
     id: 'Desk Mat',
     label: 'Desk Mat',
     emoji: '🖥️',
-    description: 'Extended mouse pads',
-    gradient: 'from-violet-500 via-purple-600 to-indigo-700',
-    glow: 'rgba(139,92,246,0.4)',
+    description: 'Large-format surface',
+    gradientFrom: '#7c3aed',
+    gradientTo: '#4f46e5',
     category: 'Accessories',
-    popular: false,
-    tag: '',
+    badge: null,
   },
   {
     id: 'Tote Bag',
     label: 'Tote Bag',
     emoji: '👜',
-    description: 'Canvas carry-all bags',
-    gradient: 'from-lime-500 via-green-500 to-emerald-600',
-    glow: 'rgba(132,204,22,0.4)',
+    description: 'Canvas & reusable bags',
+    gradientFrom: '#16a34a',
+    gradientTo: '#15803d',
     category: 'Accessories',
-    popular: false,
-    tag: '',
+    badge: null,
   },
   {
     id: 'Sweatshirt',
     label: 'Sweatshirt',
     emoji: '🥋',
-    description: 'Crewneck & zip-up',
-    gradient: 'from-cyan-500 via-teal-500 to-green-600',
-    glow: 'rgba(6,182,212,0.4)',
+    description: 'Crew & zip-up styles',
+    gradientFrom: '#0891b2',
+    gradientTo: '#0d9488',
     category: 'Apparel',
-    popular: false,
-    tag: '',
+    badge: null,
   },
   {
     id: 'Custom',
     label: 'Custom',
     emoji: '✨',
     description: 'Start from scratch',
-    gradient: 'from-fuchsia-500 via-pink-500 to-orange-400',
-    glow: 'rgba(217,70,239,0.4)',
+    gradientFrom: '#d946ef',
+    gradientTo: '#f97316',
     category: 'Custom',
-    popular: false,
-    tag: 'Blank Canvas',
+    badge: 'Blank Canvas',
   },
 ];
 
-const CATEGORIES = ['All', 'Apparel', 'Packaging', 'Stationery', 'Accessories', 'Poster'];
+const CATEGORY_FILTERS = ['All', 'Apparel', 'Packaging', 'Stationery', 'Accessories', 'Print'];
 
-// Animation variants
-const stagger = {
-  hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { staggerChildren: 0.06 } },
-};
-const fadeUp = {
+const QUICK_PICKS = ['Hoodie', 'T-Shirt', 'Mailer Box', 'Poster', 'Notebook', 'Tote Bag'];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ANIMATION VARIANTS
+// ─────────────────────────────────────────────────────────────────────────────
+const fadeUpVariant = {
   hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.45, ease: 'easeOut' } },
 };
-const fadeIn = {
-  hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { duration: 0.35 } },
+
+const staggerContainer = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.07, delayChildren: 0.1 } },
+};
+
+const cardVariant = {
+  hidden: { opacity: 0, y: 24, scale: 0.97 },
+  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.4, ease: 'easeOut' } },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-export default function DashboardView() {
-  const {
-    categories, getAllItems, templates,
-    setActiveItem, openNewItemModal,
-    setCurrentView, setActiveNavTab,
-  } = useAppStore();
-
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState('All');
-  const [hoveredType, setHoveredType] = useState<string | null>(null);
-
-  const allItems = getAllItems();
-  const recentItems = [...allItems]
-    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-    .slice(0, 5);
-
-  // Filter product types based on search + category
-  const filteredTypes = PRODUCT_TYPE_CATALOG.filter((t) => {
-    const matchSearch =
-      !searchQuery ||
-      t.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      t.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      t.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchFilter = activeFilter === 'All' || t.category === activeFilter;
-    return matchSearch && matchFilter;
-  });
-
-  // Business snapshot numbers
-  const totalProducts = allItems.length;
-  const productionReady = allItems.filter((i) => i.status === 'production-ready').length;
-  const inProgress = allItems.filter((i) =>
-    ['designing', 'sample-ordered', 'in-revision'].includes(i.status)
-  ).length;
-
-  const handlePickType = (typeId: string) => {
-    openNewItemModal(undefined, typeId);
-  };
-
-  return (
-    <div className="flex-1 overflow-y-auto bg-[#F7F8FC]">
-
-      {/* ── HERO ─────────────────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-purple-700 to-violet-800 px-6 pt-10 pb-12">
-
-        {/* Decorative blobs */}
-        <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-purple-400 opacity-20 blur-3xl animate-pulse" style={{ animationDuration: '5s' }} />
-          <div className="absolute top-8 left-1/3 w-48 h-48 rounded-full bg-cyan-400 opacity-15 blur-2xl animate-pulse" style={{ animationDuration: '7s', animationDelay: '1s' }} />
-          <div className="absolute -bottom-16 left-8 w-64 h-64 rounded-full bg-indigo-300 opacity-20 blur-3xl animate-pulse" style={{ animationDuration: '6s', animationDelay: '2s' }} />
-          <div className="absolute top-4 right-1/4 w-32 h-32 rounded-full bg-pink-400 opacity-15 blur-2xl animate-pulse" style={{ animationDuration: '4s', animationDelay: '0.5s' }} />
-          {/* Grid overlay */}
-          <div
-            className="absolute inset-0 opacity-[0.04]"
-            style={{
-              backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)',
-              backgroundSize: '40px 40px',
-            }}
-          />
-        </div>
-
-        {/* Hero content */}
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-          className="relative z-10 max-w-3xl mx-auto text-center"
-        >
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/15 backdrop-blur-sm rounded-full border border-white/20 text-white/90 text-xs font-medium mb-5">
-            <Sparkles size={11} className="text-yellow-300" />
-            Your creative workspace is ready
-          </div>
-
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-white leading-[1.15] tracking-tight mb-4">
-            What will you{' '}
-            <span className="relative">
-              <span className="relative z-10">create today?</span>
-              <span
-                className="absolute -bottom-1 left-0 right-0 h-3 opacity-30 rounded-sm"
-                style={{ background: 'linear-gradient(90deg,#f59e0b,#ec4899)' }}
-              />
-            </span>
-          </h1>
-
-          <p className="text-white/70 text-base md:text-lg mb-8 max-w-xl mx-auto leading-relaxed">
-            From clothing to packaging — design products, manage manufacturing,
-            and build your brand in one place.
-          </p>
-
-          {/* Search bar */}
-          <div className="relative max-w-lg mx-auto mb-6">
-            <Search size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search product types, templates..."
-              className="w-full pl-11 pr-4 py-3.5 bg-white rounded-2xl text-sm text-slate-700 placeholder-slate-400 shadow-xl focus:outline-none focus:ring-2 focus:ring-white/50 font-medium"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs"
-              >
-                ✕
-              </button>
-            )}
-          </div>
-
-          {/* Category filter pills */}
-          <div className="flex items-center justify-center flex-wrap gap-2">
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setActiveFilter(cat)}
-                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
-                  activeFilter === cat
-                    ? 'bg-white text-indigo-700 shadow-md'
-                    : 'bg-white/15 text-white/80 hover:bg-white/25 border border-white/20'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-        </motion.div>
-      </div>
-
-      <div className="max-w-6xl mx-auto px-6 py-8 space-y-12">
-
-        {/* ── PRODUCT TYPE GRID ────────────────────────────────────────────── */}
-        <section>
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1, duration: 0.4 }}
-            className="flex items-center justify-between mb-5"
-          >
-            <div>
-              <h2 className="text-xl font-bold text-slate-900">
-                {searchQuery ? `Results for "${searchQuery}"` : 'Start a new design'}
-              </h2>
-              <p className="text-sm text-slate-400 mt-0.5">
-                {filteredTypes.length} product type{filteredTypes.length !== 1 ? 's' : ''} available
-              </p>
-            </div>
-            {!searchQuery && (
-              <button
-                onClick={() => openNewItemModal()}
-                className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 text-sm font-semibold rounded-xl hover:bg-indigo-100 transition-colors"
-              >
-                <Plus size={14} />
-                Blank product
-              </button>
-            )}
-          </motion.div>
-
-          {filteredTypes.length === 0 ? (
-            <div className="text-center py-16 text-slate-400">
-              <div className="text-4xl mb-3">🔍</div>
-              <p className="font-medium text-slate-600">No product types match &quot;{searchQuery}&quot;</p>
-              <button onClick={() => setSearchQuery('')} className="mt-3 text-sm text-indigo-500 hover:underline">
-                Clear search
-              </button>
-            </div>
-          ) : (
-            <motion.div
-              variants={stagger}
-              initial="hidden"
-              animate="show"
-              className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-3"
-            >
-              {filteredTypes.map((type) => (
-                <ProductTypeCard
-                  key={type.id}
-                  type={type}
-                  isHovered={hoveredType === type.id}
-                  onHover={setHoveredType}
-                  onPick={handlePickType}
-                />
-              ))}
-            </motion.div>
-          )}
-        </section>
-
-        {/* ── RECENT DESIGNS ───────────────────────────────────────────────── */}
-        {recentItems.length > 0 && (
-          <section>
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="flex items-center justify-between mb-5"
-            >
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-amber-50 flex items-center justify-center">
-                  <Clock size={15} className="text-amber-500" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-slate-900">Continue where you left off</h2>
-                  <p className="text-sm text-slate-400">{allItems.length} products in your workspace</p>
-                </div>
-              </div>
-              <button
-                onClick={() => { setCurrentView('workspace'); setActiveNavTab('Products'); }}
-                className="flex items-center gap-1.5 text-sm text-indigo-500 font-semibold hover:text-indigo-700 transition-colors"
-              >
-                View all <ArrowRight size={14} />
-              </button>
-            </motion.div>
-
-            <motion.div
-              variants={stagger}
-              initial="hidden"
-              animate="show"
-              className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3"
-            >
-              {recentItems.map((item) => {
-                const cat = categories.find((c) => c.id === item.categoryId);
-                return (
-                  <RecentDesignCard
-                    key={item.id}
-                    item={item}
-                    categoryName={cat?.name || ''}
-                    categoryColor={cat?.color || '#6366F1'}
-                    categoryIcon={cat?.icon || '📦'}
-                    onClick={() => setActiveItem(item.id)}
-                  />
-                );
-              })}
-
-              {/* "Add new" tile */}
-              <motion.button
-                variants={fadeUp}
-                onClick={() => openNewItemModal()}
-                className="group aspect-[3/4] bg-white border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center gap-2 hover:border-indigo-300 hover:bg-indigo-50/40 transition-all duration-200 cursor-pointer"
-              >
-                <div className="w-10 h-10 rounded-xl bg-slate-100 group-hover:bg-indigo-100 flex items-center justify-center transition-colors">
-                  <Plus size={18} className="text-slate-400 group-hover:text-indigo-500 transition-colors" />
-                </div>
-                <span className="text-xs text-slate-400 group-hover:text-indigo-500 font-medium transition-colors">
-                  New design
-                </span>
-              </motion.button>
-            </motion.div>
-          </section>
-        )}
-
-        {/* ── EMPTY STATE (no products yet) ────────────────────────────────── */}
-        {allItems.length === 0 && (
-          <motion.section
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25 }}
-            className="bg-white rounded-3xl border border-slate-100 shadow-sm p-10 text-center"
-          >
-            <div className="text-6xl mb-4">🎨</div>
-            <h3 className="text-lg font-bold text-slate-800 mb-2">Ready when you are</h3>
-            <p className="text-slate-400 text-sm max-w-xs mx-auto mb-6 leading-relaxed">
-              Pick a product type above to create your first design, or start with
-              a template to hit the ground running.
-            </p>
-            <div className="flex items-center justify-center gap-3">
-              <button
-                onClick={() => openNewItemModal()}
-                className="px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-sm font-semibold rounded-xl shadow-sm hover:opacity-90 transition-all"
-              >
-                Create first product
-              </button>
-              <button
-                onClick={() => { setCurrentView('templates'); setActiveNavTab('Templates'); }}
-                className="px-5 py-2.5 border border-slate-200 text-slate-600 text-sm font-medium rounded-xl hover:bg-slate-50 transition-colors"
-              >
-                Browse templates
-              </button>
-            </div>
-          </motion.section>
-        )}
-
-        {/* ── TEMPLATES ROW ────────────────────────────────────────────────── */}
-        <section>
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="flex items-center justify-between mb-5"
-          >
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-purple-50 flex items-center justify-center">
-                <Sparkles size={15} className="text-purple-500" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-slate-900">Start with a template</h2>
-                <p className="text-sm text-slate-400">{templates.length} ready-to-use layouts</p>
-              </div>
-            </div>
-            <button
-              onClick={() => { setCurrentView('templates'); setActiveNavTab('Templates'); }}
-              className="flex items-center gap-1.5 text-sm text-indigo-500 font-semibold hover:text-indigo-700 transition-colors"
-            >
-              Browse all <ArrowRight size={14} />
-            </button>
-          </motion.div>
-
-          {/* Horizontal scroll row */}
-          <div className="relative">
-            <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-thin" style={{ scrollSnapType: 'x mandatory' }}>
-              {templates.slice(0, 10).map((tpl, i) => (
-                <motion.button
-                  key={tpl.id}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.3 + i * 0.04 }}
-                  onClick={() => { setCurrentView('templates'); setActiveNavTab('Templates'); }}
-                  className="group flex-shrink-0 w-44 bg-white rounded-2xl border border-slate-100 overflow-hidden hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200 text-left"
-                  style={{ scrollSnapAlign: 'start' }}
-                >
-                  {/* Template color preview */}
-                  <div
-                    className="h-28 flex items-center justify-center relative overflow-hidden"
-                    style={{ background: `linear-gradient(135deg, ${tpl.color}22 0%, ${tpl.color}50 100%)` }}
-                  >
-                    <div
-                      className="absolute inset-0 opacity-10"
-                      style={{ background: `radial-gradient(circle at 70% 70%, ${tpl.color}, transparent 65%)` }}
-                    />
-                    <span className="text-4xl relative z-10 group-hover:scale-110 transition-transform duration-200">
-                      {tpl.icon}
-                    </span>
-                    {tpl.isPremium && (
-                      <span className="absolute top-2 right-2 flex items-center gap-0.5 px-1.5 py-0.5 bg-amber-400 text-white text-[9px] font-bold rounded-full">
-                        <Star size={7} />PRO
-                      </span>
-                    )}
-                  </div>
-                  <div className="p-3">
-                    <p className="text-xs font-semibold text-slate-800 truncate">{tpl.name}</p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">{tpl.category}</p>
-                  </div>
-                </motion.button>
-              ))}
-
-              {/* "View all" end card */}
-              <motion.button
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.7 }}
-                onClick={() => { setCurrentView('templates'); setActiveNavTab('Templates'); }}
-                className="flex-shrink-0 w-44 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl border border-indigo-100 flex flex-col items-center justify-center gap-2 hover:shadow-card-hover transition-all"
-              >
-                <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center">
-                  <ChevronRight size={18} className="text-indigo-500" />
-                </div>
-                <span className="text-xs font-semibold text-indigo-600">View all templates</span>
-              </motion.button>
-            </div>
-
-            {/* Fade out right edge */}
-            <div className="absolute right-0 top-0 bottom-3 w-16 bg-gradient-to-l from-[#F7F8FC] to-transparent pointer-events-none" />
-          </div>
-        </section>
-
-        {/* ── BUSINESS SNAPSHOT (compact) ──────────────────────────────────── */}
-        {allItems.length > 0 && (
-          <motion.section
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-          >
-            <div className="flex items-center gap-2.5 mb-4">
-              <div className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center">
-                <BarChart3 size={15} className="text-indigo-500" />
-              </div>
-              <h2 className="text-xl font-bold text-slate-900">Workspace at a glance</h2>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <SnapCard
-                label="Total products"
-                value={totalProducts}
-                sub={`Across ${categories.length} categories`}
-                icon={<Package size={16} />}
-                gradient="from-indigo-500 to-purple-600"
-              />
-              <SnapCard
-                label="Production ready"
-                value={productionReady}
-                sub={totalProducts ? `${Math.round((productionReady / totalProducts) * 100)}% of catalog` : '—'}
-                icon={<CheckCircle size={16} />}
-                gradient="from-emerald-500 to-teal-500"
-              />
-              <SnapCard
-                label="In progress"
-                value={inProgress}
-                sub="Designing, sampling, revision"
-                icon={<Zap size={16} />}
-                gradient="from-amber-400 to-orange-500"
-              />
-              <SnapCard
-                label="Categories"
-                value={categories.length}
-                sub={`${totalProducts} items total`}
-                icon={<Layers size={16} />}
-                gradient="from-sky-500 to-cyan-500"
-              />
-            </div>
-
-            {/* Category health strips */}
-            <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-3">
-              {categories.map((cat) => {
-                const ready = cat.items.filter((i) => i.status === 'production-ready').length;
-                const pct = cat.items.length ? (ready / cat.items.length) * 100 : 0;
-                return (
-                  <button
-                    key={cat.id}
-                    onClick={() => cat.items[0] && setActiveItem(cat.items[0].id)}
-                    className="bg-white rounded-2xl border border-slate-100 p-3.5 text-left hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200 group"
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-base">{cat.icon}</span>
-                      <span className="text-xs font-semibold text-slate-700 truncate flex-1">{cat.name}</span>
-                      <span className="text-[10px] text-slate-400">{cat.items.length}</span>
-                    </div>
-                    <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all duration-700"
-                        style={{ width: `${pct}%`, backgroundColor: cat.color }}
-                      />
-                    </div>
-                    <p className="text-[10px] text-slate-400 mt-1">{ready}/{cat.items.length} production ready</p>
-                  </button>
-                );
-              })}
-            </div>
-          </motion.section>
-        )}
-
-        {/* ── INSPIRATION BANNER ───────────────────────────────────────────── */}
-        <motion.section
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-7 flex items-center justify-between"
-        >
-          <div className="absolute inset-0 opacity-20" style={{
-            backgroundImage: 'radial-gradient(circle at 20% 50%, #6366f1 0%, transparent 50%), radial-gradient(circle at 80% 50%, #8b5cf6 0%, transparent 50%)',
-          }} />
-          <div className="relative z-10">
-            <p className="text-xs font-semibold text-indigo-300 uppercase tracking-widest mb-1">Pro Tip</p>
-            <p className="text-white font-bold text-lg mb-1">
-              Build smarter with Design Zones
-            </p>
-            <p className="text-slate-400 text-sm max-w-md">
-              Open any product in 2D Design mode and enable Zones — the system will guide
-              you to the right placement areas for your product type automatically.
-            </p>
-          </div>
-          <button
-            onClick={() => { setCurrentView('workspace'); setActiveNavTab('Workspace'); }}
-            className="relative z-10 flex-shrink-0 ml-4 flex items-center gap-2 px-5 py-2.5 bg-indigo-500 hover:bg-indigo-400 text-white text-sm font-semibold rounded-xl transition-colors shadow-lg"
-          >
-            Open Workspace <ArrowRight size={14} />
-          </button>
-        </motion.section>
-
-        {/* bottom padding */}
-        <div className="h-4" />
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// PRODUCT TYPE CARD
+// PRODUCT CARD
 // ─────────────────────────────────────────────────────────────────────────────
 function ProductTypeCard({
-  type, isHovered, onHover, onPick,
+  product,
+  onSelect,
 }: {
-  type: typeof PRODUCT_TYPE_CATALOG[0];
-  isHovered: boolean;
-  onHover: (id: string | null) => void;
-  onPick: (id: string) => void;
+  product: (typeof PRODUCT_TYPES)[0];
+  onSelect: () => void;
 }) {
+  const [hovered, setHovered] = useState(false);
+
   return (
-    <motion.button
-      variants={fadeUp}
-      onMouseEnter={() => onHover(type.id)}
-      onMouseLeave={() => onHover(null)}
-      onClick={() => onPick(type.id)}
-      className="group relative flex flex-col items-center justify-end text-center rounded-2xl overflow-hidden cursor-pointer transition-all duration-250"
-      style={{
-        aspectRatio: '3/4',
-        boxShadow: isHovered
-          ? `0 16px 40px -8px ${type.glow}, 0 4px 12px rgba(0,0,0,0.12)`
-          : '0 1px 4px rgba(0,0,0,0.06)',
-        transform: isHovered ? 'translateY(-5px) scale(1.02)' : 'translateY(0) scale(1)',
+    <motion.div
+      variants={cardVariant}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={onSelect}
+      className="relative cursor-pointer rounded-2xl overflow-hidden"
+      style={{ aspectRatio: '3 / 4' }}
+      animate={{
+        scale: hovered ? 1.03 : 1,
+        boxShadow: hovered
+          ? `0 20px 50px -10px ${product.gradientFrom}88, 0 8px 24px -6px ${product.gradientTo}55`
+          : '0 2px 12px 0 rgba(0,0,0,0.08)',
       }}
+      transition={{ duration: 0.22, ease: 'easeOut' }}
     >
       {/* Gradient background */}
-      <div className={`absolute inset-0 bg-gradient-to-br ${type.gradient}`} />
-
-      {/* Subtle inner texture */}
       <div
-        className="absolute inset-0 opacity-[0.06]"
+        className="absolute inset-0"
         style={{
-          backgroundImage: 'repeating-linear-gradient(45deg, rgba(255,255,255,0.5) 0px, rgba(255,255,255,0.5) 1px, transparent 1px, transparent 10px)',
+          background: `linear-gradient(145deg, ${product.gradientFrom}, ${product.gradientTo})`,
         }}
       />
 
-      {/* Popular/tag badge */}
-      {type.tag && (
-        <div className="absolute top-2.5 left-2.5 z-10 px-2 py-0.5 bg-white/20 backdrop-blur-sm rounded-full text-white text-[9px] font-bold uppercase tracking-wide border border-white/25">
-          {type.tag}
+      {/* Decorative blurred blobs */}
+      <div
+        className="absolute -top-6 -right-6 w-24 h-24 rounded-full opacity-30 blur-2xl"
+        style={{ background: product.gradientFrom }}
+      />
+      <div
+        className="absolute -bottom-8 -left-4 w-28 h-28 rounded-full opacity-25 blur-3xl"
+        style={{ background: product.gradientTo }}
+      />
+
+      {/* Badge top-left */}
+      {product.badge && (
+        <div className="absolute top-3 left-3 z-10">
+          <span
+            className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
+            style={{
+              background: 'rgba(255,255,255,0.22)',
+              backdropFilter: 'blur(8px)',
+              color: '#ffffff',
+              border: '1px solid rgba(255,255,255,0.3)',
+            }}
+          >
+            {product.badge === 'Best Seller' ? '⭐ ' : product.badge === 'Popular' ? '🔥 ' : ''}
+            {product.badge}
+          </span>
         </div>
       )}
 
-      {/* Emoji */}
-      <div className="absolute inset-0 flex items-center justify-center">
+      {/* Category pill top-right */}
+      <div className="absolute top-3 right-3 z-10">
         <span
-          className="text-5xl transition-transform duration-300 drop-shadow-lg"
-          style={{ transform: isHovered ? 'scale(1.15) translateY(-4px)' : 'scale(1)' }}
+          className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+          style={{
+            background: 'rgba(0,0,0,0.28)',
+            backdropFilter: 'blur(6px)',
+            color: 'rgba(255,255,255,0.9)',
+          }}
         >
-          {type.emoji}
+          {product.category}
         </span>
       </div>
 
-      {/* Bottom info strip */}
-      <div className="relative z-10 w-full px-3 pb-3 pt-6 bg-gradient-to-t from-black/50 to-transparent">
-        <p className="text-white font-bold text-xs leading-tight">{type.label}</p>
-        <p className="text-white/60 text-[9px] mt-0.5 leading-tight">{type.description}</p>
+      {/* Emoji centered */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <motion.span
+          className="text-[56px] select-none leading-none"
+          animate={{ scale: hovered ? 1.15 : 1, rotate: hovered ? 5 : 0 }}
+          transition={{ duration: 0.22 }}
+        >
+          {product.emoji}
+        </motion.span>
       </div>
 
-      {/* Hover CTA overlay */}
+      {/* Bottom gradient overlay */}
       <div
-        className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-[1px] transition-opacity duration-200 rounded-2xl"
-        style={{ opacity: isHovered ? 1 : 0 }}
+        className="absolute bottom-0 left-0 right-0 z-10"
+        style={{
+          background: 'linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.3) 50%, transparent 100%)',
+          padding: '24px 14px 14px',
+        }}
       >
-        <div className="flex flex-col items-center gap-1.5 -mt-4">
-          <div className="w-9 h-9 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
-            <Plus size={16} className="text-slate-800" />
-          </div>
-          <span className="text-white text-[11px] font-bold drop-shadow">Create</span>
-        </div>
+        <p className="text-white font-bold text-sm leading-tight">{product.label}</p>
+        <p className="text-white/70 text-[11px] mt-0.5 leading-tight">{product.description}</p>
       </div>
-    </motion.button>
+
+      {/* Hover: "Create" overlay */}
+      <AnimatePresence>
+        {hovered && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="absolute inset-0 z-20 flex items-center justify-center"
+            style={{ background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(2px)' }}
+          >
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-xl">
+                <Plus className="w-6 h-6 text-indigo-600" />
+              </div>
+              <span className="text-white font-semibold text-sm">Create</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // RECENT DESIGN CARD
 // ─────────────────────────────────────────────────────────────────────────────
-function RecentDesignCard({
-  item, categoryName, categoryColor, categoryIcon, onClick,
-}: {
-  item: ProductItem;
-  categoryName: string;
-  categoryColor: string;
-  categoryIcon: string;
-  onClick: () => void;
-}) {
+function RecentCard({ item, onOpen }: { item: ProductItem; onOpen: () => void }) {
+  const statusColor = STATUS_COLORS[item.status] || '#94a3b8';
+  const statusLabel = STATUS_LABELS[item.status] || item.status;
+
   return (
-    <motion.button
-      variants={fadeUp}
-      onClick={onClick}
-      className="group text-left bg-white rounded-2xl border border-slate-100 overflow-hidden hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200"
+    <motion.div
+      whileHover={{ y: -3, boxShadow: '0 12px 32px -8px rgba(99,102,241,0.18)' }}
+      transition={{ duration: 0.2 }}
+      onClick={onOpen}
+      className="flex-none w-56 cursor-pointer bg-white rounded-xl border border-slate-100 overflow-hidden"
+      style={{ boxShadow: '0 2px 10px rgba(0,0,0,0.06)' }}
     >
-      {/* Color preview header */}
+      {/* Color header */}
       <div
-        className="h-24 relative overflow-hidden flex items-center justify-center"
-        style={{
-          background: item.color
-            ? `linear-gradient(135deg, ${item.color}dd, ${item.color}88)`
-            : `linear-gradient(135deg, ${categoryColor}cc, ${categoryColor}55)`,
-        }}
+        className="h-24 flex items-center justify-center text-4xl"
+        style={{ background: `linear-gradient(135deg, ${statusColor}22, ${statusColor}44)` }}
       >
-        {/* Decorative blob */}
-        <div
-          className="absolute -top-4 -right-4 w-20 h-20 rounded-full opacity-30"
-          style={{ backgroundColor: item.color || categoryColor }}
-        />
-        {/* Initials */}
-        <span className="relative z-10 text-white font-extrabold text-xl drop-shadow">
-          {item.name.slice(0, 2).toUpperCase()}
-        </span>
-
-        {/* Category icon badge */}
-        <div
-          className="absolute top-2 left-2 w-6 h-6 rounded-lg flex items-center justify-center text-sm"
-          style={{ backgroundColor: 'rgba(255,255,255,0.25)', backdropFilter: 'blur(4px)' }}
-        >
-          {categoryIcon}
-        </div>
+        {PRODUCT_TYPES.find((p) => p.id === item.type)?.emoji || '📦'}
       </div>
-
-      {/* Info */}
       <div className="p-3">
-        <p className="text-xs font-bold text-slate-800 truncate group-hover:text-indigo-600 transition-colors">
-          {item.name}
-        </p>
-        <div className="flex items-center gap-1.5 mt-1">
-          <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: categoryColor }} />
-          <span className="text-[10px] text-slate-400 truncate">{categoryName}</span>
-        </div>
+        <p className="font-semibold text-slate-800 text-sm truncate">{item.name}</p>
+        <p className="text-slate-400 text-[11px] mt-0.5">{item.type}</p>
         <div className="flex items-center justify-between mt-2">
-          <StatusBadge status={item.status} size="sm" />
-          <span className="text-[10px] text-slate-400">{getRelativeTime(item.updatedAt)}</span>
+          <span
+            className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+            style={{ background: `${statusColor}22`, color: statusColor }}
+          >
+            {statusLabel}
+          </span>
+          <span className="text-slate-400 text-[10px] flex items-center gap-0.5">
+            <Clock className="w-3 h-3" />
+            {getRelativeTime(item.updatedAt)}
+          </span>
         </div>
       </div>
-
-      {/* Hover arrow */}
-      <div className="px-3 pb-3 opacity-0 group-hover:opacity-100 transition-opacity -mt-1">
-        <div className="flex items-center gap-1 text-[10px] text-indigo-500 font-semibold">
-          Continue editing <ArrowRight size={9} />
-        </div>
-      </div>
-    </motion.button>
+    </motion.div>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SNAPSHOT STAT CARD
+// TEMPLATE CARD
 // ─────────────────────────────────────────────────────────────────────────────
-function SnapCard({
-  label, value, sub, icon, gradient,
-}: {
-  label: string;
-  value: number;
-  sub: string;
-  icon: React.ReactNode;
-  gradient: string;
-}) {
+function TemplateCard({ template }: { template: { id: string; name: string; category: string; description: string; color: string; icon: string; isPremium: boolean } }) {
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 p-4 flex items-center gap-3 hover:shadow-card-hover transition-shadow">
-      <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center text-white flex-shrink-0 shadow-sm`}>
-        {icon}
+    <motion.div
+      whileHover={{ y: -3, boxShadow: '0 12px 32px -8px rgba(99,102,241,0.2)' }}
+      transition={{ duration: 0.2 }}
+      className="flex-none w-48 cursor-pointer bg-white rounded-xl border border-slate-100 overflow-hidden"
+      style={{ boxShadow: '0 2px 10px rgba(0,0,0,0.06)' }}
+    >
+      <div
+        className="h-28 flex items-center justify-center text-4xl"
+        style={{ background: `${template.color}18` }}
+      >
+        <span className="text-5xl">{template.icon}</span>
       </div>
-      <div className="min-w-0">
-        <p className="text-xl font-extrabold text-slate-900 leading-none">{value}</p>
-        <p className="text-[11px] text-slate-500 mt-0.5 font-medium leading-tight">{label}</p>
-        <p className="text-[10px] text-slate-400 mt-0.5 leading-tight truncate">{sub}</p>
+      <div className="p-3">
+        <div className="flex items-start justify-between gap-1">
+          <p className="font-semibold text-slate-800 text-sm leading-tight">{template.name}</p>
+          {template.isPremium && (
+            <span className="flex-none text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-600">
+              PRO
+            </span>
+          )}
+        </div>
+        <p className="text-slate-400 text-[11px] mt-0.5 line-clamp-2">{template.description}</p>
+      </div>
+    </motion.div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MAIN COMPONENT
+// ─────────────────────────────────────────────────────────────────────────────
+export default function DashboardView() {
+  const { categories, getAllItems, templates, setActiveItem, openNewItemModal, setCurrentView, setActiveNavTab } =
+    useAppStore();
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeCategory, setActiveCategory] = useState('All');
+
+  const allItems = getAllItems();
+
+  const recentItems = useMemo(
+    () =>
+      [...allItems]
+        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+        .slice(0, 8),
+    [allItems]
+  );
+
+  const filteredProductTypes = useMemo(() => {
+    const byCategory =
+      activeCategory === 'All'
+        ? PRODUCT_TYPES
+        : PRODUCT_TYPES.filter((p) => p.category === activeCategory);
+
+    if (!searchQuery.trim()) return byCategory;
+    const q = searchQuery.toLowerCase();
+    return byCategory.filter(
+      (p) =>
+        p.label.toLowerCase().includes(q) ||
+        p.category.toLowerCase().includes(q) ||
+        p.description.toLowerCase().includes(q)
+    );
+  }, [activeCategory, searchQuery]);
+
+  const totalProducts = allItems.length;
+  const productionReadyCount = allItems.filter((i) => i.status === 'production-ready').length;
+  const categoriesCount = categories.length;
+
+  function handleSelectProductType(productType: string) {
+    openNewItemModal(undefined, productType);
+  }
+
+  function handleOpenItem(item: ProductItem) {
+    setActiveItem(item.id);
+    setCurrentView('workspace');
+    setActiveNavTab('Workspace');
+  }
+
+  return (
+    <div className="min-h-screen" style={{ background: '#FAFBFF' }}>
+      {/* ── Rainbow gradient strip ── */}
+      <div
+        className="h-1 w-full"
+        style={{
+          background:
+            'linear-gradient(to right, #6366f1, #8b5cf6, #ec4899, #f97316)',
+        }}
+      />
+
+      {/* ── Hero Section ── */}
+      <div className="relative overflow-hidden" style={{ background: '#ffffff' }}>
+        {/* Soft radial gradient blobs */}
+        <div
+          className="absolute top-0 left-0 w-[480px] h-[480px] rounded-full opacity-40 pointer-events-none"
+          style={{
+            background: 'radial-gradient(circle, #eef2ff 0%, transparent 70%)',
+            transform: 'translate(-30%, -30%)',
+          }}
+        />
+        <div
+          className="absolute top-0 right-0 w-[400px] h-[400px] rounded-full opacity-30 pointer-events-none"
+          style={{
+            background: 'radial-gradient(circle, #faf5ff 0%, transparent 70%)',
+            transform: 'translate(25%, -25%)',
+          }}
+        />
+        <div
+          className="absolute bottom-0 left-1/2 w-[320px] h-[320px] rounded-full opacity-20 pointer-events-none"
+          style={{
+            background: 'radial-gradient(circle, #eef2ff 0%, transparent 70%)',
+            transform: 'translate(-50%, 50%)',
+          }}
+        />
+
+        <div className="relative z-10 max-w-6xl mx-auto px-6 pt-12 pb-10">
+          {/* Greeting */}
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+            <p className="text-slate-500 text-sm font-medium mb-1 flex items-center gap-1.5">
+              <Sparkles className="w-4 h-4 text-indigo-400" />
+              {getGreeting()}, Designer
+            </p>
+          </motion.div>
+
+          {/* Headline */}
+          <motion.h1
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.08 }}
+            className="text-4xl font-extrabold text-slate-800 tracking-tight leading-tight mb-3"
+          >
+            What will you{' '}
+            <span
+              style={{
+                background: 'linear-gradient(to right, #6366f1, #a855f7)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}
+            >
+              create today?
+            </span>
+          </motion.h1>
+
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.14 }}
+            className="text-slate-400 text-base mb-6 max-w-xl"
+          >
+            Design, build, and manage your entire product line — all in one place.
+          </motion.p>
+
+          {/* Search bar */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.2 }}
+            className="relative max-w-xl mb-5"
+          >
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search product types, templates, categories…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-12 pr-5 py-3.5 rounded-2xl text-sm text-slate-700 placeholder-slate-400 outline-none transition-all"
+              style={{
+                background: '#F1F5F9',
+                border: '2px solid transparent',
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.border = '2px solid #6366f133';
+                e.currentTarget.style.background = '#ffffff';
+                e.currentTarget.style.boxShadow = '0 0 0 4px #6366f10f';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.border = '2px solid transparent';
+                e.currentTarget.style.background = '#F1F5F9';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            />
+          </motion.div>
+
+          {/* Quick pick pills */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.26 }}
+            className="flex flex-wrap gap-2"
+          >
+            <span className="text-slate-400 text-xs font-medium self-center mr-1">Quick start:</span>
+            {QUICK_PICKS.map((qp) => {
+              const pt = PRODUCT_TYPES.find((p) => p.id === qp);
+              return (
+                <button
+                  key={qp}
+                  onClick={() => handleSelectProductType(qp)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all hover:scale-105 active:scale-95"
+                  style={{
+                    background: 'rgba(99,102,241,0.08)',
+                    color: '#6366f1',
+                    border: '1px solid rgba(99,102,241,0.18)',
+                  }}
+                >
+                  <span>{pt?.emoji}</span>
+                  {qp}
+                </button>
+              );
+            })}
+          </motion.div>
+        </div>
+      </div>
+
+      {/* ── Main Content ── */}
+      <div className="max-w-6xl mx-auto px-6 py-8 space-y-10">
+
+        {/* ── Category filter tabs ── */}
+        <motion.div
+          variants={fadeUpVariant}
+          initial="hidden"
+          animate="visible"
+        >
+          <div
+            className="inline-flex items-center gap-1 p-1 rounded-2xl"
+            style={{ background: '#F1F5F9' }}
+          >
+            {CATEGORY_FILTERS.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className="px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200"
+                style={
+                  activeCategory === cat
+                    ? {
+                        background: '#ffffff',
+                        color: '#6366f1',
+                        boxShadow: '0 2px 8px rgba(99,102,241,0.12)',
+                      }
+                    : {
+                        background: 'transparent',
+                        color: '#64748b',
+                      }
+                }
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* ── Product Type Grid ── */}
+        <section>
+          <motion.div
+            variants={fadeUpVariant}
+            initial="hidden"
+            animate="visible"
+            className="flex items-center justify-between mb-4"
+          >
+            <h2 className="text-lg font-bold text-slate-800">
+              {activeCategory === 'All' ? 'All Product Types' : activeCategory}
+              <span className="ml-2 text-sm font-normal text-slate-400">
+                ({filteredProductTypes.length})
+              </span>
+            </h2>
+          </motion.div>
+
+          <AnimatePresence mode="wait">
+            {filteredProductTypes.length === 0 ? (
+              <motion.div
+                key="empty"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex flex-col items-center justify-center py-16 text-slate-400"
+              >
+                <Sparkles className="w-10 h-10 mb-3 opacity-40" />
+                <p className="text-sm font-medium">No product types match your search.</p>
+                <button
+                  onClick={() => { setSearchQuery(''); setActiveCategory('All'); }}
+                  className="mt-3 text-indigo-500 text-sm font-semibold hover:underline"
+                >
+                  Clear filters
+                </button>
+              </motion.div>
+            ) : (
+              <motion.div
+                key={activeCategory + searchQuery}
+                variants={staggerContainer}
+                initial="hidden"
+                animate="visible"
+                className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"
+              >
+                {filteredProductTypes.map((pt) => (
+                  <ProductTypeCard
+                    key={pt.id}
+                    product={pt}
+                    onSelect={() => handleSelectProductType(pt.id)}
+                  />
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </section>
+
+        {/* ── Continue your work ── */}
+        {recentItems.length > 0 && (
+          <motion.section variants={fadeUpVariant} initial="hidden" animate="visible">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <Clock className="w-5 h-5 text-indigo-400" />
+                Continue your work
+              </h2>
+              <button
+                onClick={() => { setCurrentView('inventory'); setActiveNavTab('Inventory'); }}
+                className="flex items-center gap-1 text-indigo-500 text-sm font-semibold hover:text-indigo-700 transition-colors"
+              >
+                View all
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex gap-4 overflow-x-auto pb-3 scrollbar-hide">
+              {recentItems.map((item) => (
+                <RecentCard
+                  key={item.id}
+                  item={item}
+                  onOpen={() => handleOpenItem(item)}
+                />
+              ))}
+            </div>
+          </motion.section>
+        )}
+
+        {/* ── Start from a template ── */}
+        {templates.length > 0 && (
+          <motion.section variants={fadeUpVariant} initial="hidden" animate="visible">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <Layers className="w-5 h-5 text-purple-400" />
+                Start from a template
+              </h2>
+              <button
+                onClick={() => { setCurrentView('templates'); setActiveNavTab('Templates'); }}
+                className="flex items-center gap-1 text-indigo-500 text-sm font-semibold hover:text-indigo-700 transition-colors"
+              >
+                Browse all
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex gap-4 overflow-x-auto pb-3 scrollbar-hide">
+              {templates.map((tmpl) => (
+                <TemplateCard key={tmpl.id} template={tmpl} />
+              ))}
+            </div>
+          </motion.section>
+        )}
+
+        {/* ── Build & Manage stats section ── */}
+        <motion.section variants={fadeUpVariant} initial="hidden" animate="visible">
+          <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 text-indigo-400" />
+            Build &amp; Manage
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+
+            {/* Total products */}
+            <motion.div
+              whileHover={{ y: -3, boxShadow: '0 16px 40px -10px rgba(99,102,241,0.18)' }}
+              transition={{ duration: 0.2 }}
+              className="bg-white rounded-2xl border border-slate-100 p-5 cursor-pointer"
+              style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}
+              onClick={() => { setCurrentView('inventory'); setActiveNavTab('Inventory'); }}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: '#eef2ff' }}>
+                  <Package className="w-5 h-5 text-indigo-500" />
+                </div>
+                <ArrowRight className="w-4 h-4 text-slate-300" />
+              </div>
+              <p className="text-3xl font-extrabold text-slate-800">{totalProducts}</p>
+              <p className="text-slate-500 text-sm font-medium mt-0.5">Total Products</p>
+              <p className="text-slate-400 text-xs mt-2">
+                {productionReadyCount} production-ready
+              </p>
+            </motion.div>
+
+            {/* Category health */}
+            <motion.div
+              whileHover={{ y: -3, boxShadow: '0 16px 40px -10px rgba(16,185,129,0.16)' }}
+              transition={{ duration: 0.2 }}
+              className="bg-white rounded-2xl border border-slate-100 p-5 cursor-pointer"
+              style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}
+              onClick={() => { setCurrentView('inventory'); setActiveNavTab('Inventory'); }}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: '#ecfdf5' }}>
+                  <CheckCircle className="w-5 h-5 text-emerald-500" />
+                </div>
+                <ArrowRight className="w-4 h-4 text-slate-300" />
+              </div>
+              <p className="text-3xl font-extrabold text-slate-800">{categoriesCount}</p>
+              <p className="text-slate-500 text-sm font-medium mt-0.5">Categories</p>
+              <div className="mt-2 flex gap-1 flex-wrap">
+                {categories.slice(0, 4).map((cat) => (
+                  <span
+                    key={cat.id}
+                    className="text-[10px] px-2 py-0.5 rounded-full font-medium"
+                    style={{ background: `${cat.color}18`, color: cat.color }}
+                  >
+                    {cat.icon} {cat.name}
+                  </span>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Workspace tools */}
+            <motion.div
+              whileHover={{ y: -3, boxShadow: '0 16px 40px -10px rgba(99,102,241,0.16)' }}
+              transition={{ duration: 0.2 }}
+              className="bg-white rounded-2xl border border-slate-100 p-5"
+              style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: '#fdf4ff' }}>
+                  <Zap className="w-5 h-5 text-purple-500" />
+                </div>
+              </div>
+              <p className="text-slate-700 text-sm font-bold mb-3">Workspace Tools</p>
+              <div className="space-y-1.5">
+                {[
+                  { label: 'Manufacturing Pipeline', icon: Factory, view: 'manufacturing', nav: 'Manufacturing' },
+                  { label: 'Product Inventory', icon: Package, view: 'inventory', nav: 'Inventory' },
+                  { label: 'Analytics', icon: BarChart3, view: 'analytics', nav: 'Analytics' },
+                ].map(({ label, icon: Icon, view, nav }) => (
+                  <button
+                    key={label}
+                    onClick={() => {
+                      setCurrentView(view as Parameters<typeof setCurrentView>[0]);
+                      setActiveNavTab(nav);
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-sm text-slate-600 font-medium transition-all hover:bg-indigo-50 hover:text-indigo-700 group"
+                  >
+                    <Icon className="w-4 h-4 text-slate-400 group-hover:text-indigo-500 transition-colors" />
+                    {label}
+                    <ChevronRight className="w-3.5 h-3.5 ml-auto text-slate-300 group-hover:text-indigo-400 transition-colors" />
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          </div>
+        </motion.section>
+
+        {/* ── Pro Tip Banner ── */}
+        <motion.div
+          variants={fadeUpVariant}
+          initial="hidden"
+          animate="visible"
+          className="rounded-2xl overflow-hidden"
+          style={{
+            background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e1b4b 100%)',
+            boxShadow: '0 8px 32px -8px rgba(99,102,241,0.35)',
+          }}
+        >
+          <div className="px-6 py-5 flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-4">
+              <div
+                className="w-12 h-12 rounded-xl flex items-center justify-center flex-none"
+                style={{ background: 'rgba(255,255,255,0.1)' }}
+              >
+                <Sparkles className="w-6 h-6 text-yellow-300" />
+              </div>
+              <div>
+                <p className="text-white font-bold text-sm">Pro Tip</p>
+                <p className="text-indigo-200 text-sm mt-0.5 max-w-lg">
+                  Start with a Hoodie or T-Shirt — our most popular product types. Use the Manufacturing Pipeline to track sample orders and approvals end-to-end.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => { setCurrentView('manufacturing'); setActiveNavTab('Manufacturing'); }}
+              className="flex-none flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all hover:scale-105 active:scale-95"
+              style={{
+                background: 'rgba(255,255,255,0.15)',
+                color: '#ffffff',
+                border: '1px solid rgba(255,255,255,0.2)',
+              }}
+            >
+              Open Pipeline
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </motion.div>
+
+        {/* Bottom spacer */}
+        <div className="h-8" />
       </div>
     </div>
   );
