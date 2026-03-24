@@ -16,6 +16,7 @@ import {
   BarChart3,
   Factory,
   ChevronRight,
+  BookOpen,
 } from 'lucide-react';
 import { useAppStore } from '@/store/appStore';
 import { getRelativeTime } from '@/lib/utils';
@@ -383,7 +384,7 @@ function TemplateCard({ template }: { template: { id: string; name: string; cate
 // MAIN COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
 export default function DashboardView() {
-  const { categories, getAllItems, templates, setActiveItem, openNewItemModal, setCurrentView, setActiveNavTab } =
+  const { categories, getAllItems, templates, setActiveItem, openNewItemModal, setCurrentView, setActiveNavTab, isDemoMode } =
     useAppStore();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -430,7 +431,7 @@ export default function DashboardView() {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: '#FAFBFF' }}>
+    <div className="" style={{ background: '#FAFBFF' }}>
       {/* ── Rainbow gradient strip ── */}
       <div
         className="h-1 w-full"
@@ -561,6 +562,47 @@ export default function DashboardView() {
               );
             })}
           </motion.div>
+        </div>
+      </div>
+
+      {/* ── Getting Started Banner ── */}
+      <div style={{ background: '#F0F4FF' }} className="border-b border-indigo-100">
+        <div className="max-w-6xl mx-auto px-6 py-6">
+          <div className="flex items-start gap-3 mb-4">
+            <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center flex-none">
+              <BookOpen className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <h2 className="font-bold text-slate-800 text-base">Getting Started</h2>
+              <p className="text-slate-500 text-sm">Follow these steps to build your first product</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            {[
+              { step: 1, icon: '📁', title: 'Create Category', desc: 'Organize by type (Apparel, Packaging…)', action: 'Add Category', onClick: () => useAppStore.getState().openNewCategoryModal() },
+              { step: 2, icon: '➕', title: 'Add Product', desc: 'Pick a product type and give it a name', action: 'New Product', onClick: () => openNewItemModal() },
+              { step: 3, icon: '🎨', title: 'Design It', desc: 'Use the 2D canvas to add your artwork', action: 'Open Workspace', onClick: () => { setCurrentView('workspace'); setActiveNavTab('Workspace'); } },
+              { step: 4, icon: '📬', title: 'Order Sample', desc: 'Track supplier and sample status', action: 'Manufacturing', onClick: () => { setCurrentView('manufacturing'); setActiveNavTab('manufacturing'); } },
+              { step: 5, icon: '🚀', title: 'Go to Production', desc: 'Approve and launch your product line', action: 'View Pipeline', onClick: () => { setCurrentView('manufacturing'); setActiveNavTab('manufacturing'); } },
+            ].map((s) => (
+              <button
+                key={s.step}
+                onClick={s.onClick}
+                className="text-left bg-white rounded-xl p-3 border border-indigo-100 hover:border-indigo-300 hover:shadow-sm transition-all group"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 text-[10px] font-bold flex items-center justify-center flex-none">{s.step}</span>
+                  <span className="text-lg leading-none">{s.icon}</span>
+                </div>
+                <p className="font-semibold text-slate-800 text-xs leading-tight">{s.title}</p>
+                <p className="text-slate-400 text-[11px] mt-0.5 leading-tight">{s.desc}</p>
+                <div className="flex items-center gap-0.5 mt-2 text-indigo-500 text-[10px] font-semibold group-hover:gap-1.5 transition-all">
+                  {s.action} <ChevronRight className="w-3 h-3" />
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

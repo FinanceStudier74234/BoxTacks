@@ -119,7 +119,7 @@ export default function AppShell() {
     switch (currentView) {
       case 'dashboard':
         return (
-          <motion.div key="dashboard" className="flex-1 overflow-hidden flex flex-col" {...viewTransition}>
+          <motion.div key="dashboard" className="flex-1 min-h-0 overflow-y-auto" {...viewTransition}>
             <ErrorBoundary fallbackTitle="Dashboard failed to load">
               <DashboardView />
             </ErrorBoundary>
@@ -140,7 +140,7 @@ export default function AppShell() {
         );
       case 'templates':
         return (
-          <motion.div key="templates" className="flex-1 overflow-hidden flex flex-col" {...viewTransition}>
+          <motion.div key="templates" className="flex-1 min-h-0 overflow-y-auto" {...viewTransition}>
             <ErrorBoundary fallbackTitle="Templates failed to load">
               <TemplateGallery />
             </ErrorBoundary>
@@ -148,7 +148,7 @@ export default function AppShell() {
         );
       case 'manufacturing':
         return (
-          <motion.div key="manufacturing" className="flex-1 overflow-hidden flex flex-col" {...viewTransition}>
+          <motion.div key="manufacturing" className="flex-1 min-h-0 overflow-y-auto" {...viewTransition}>
             <ErrorBoundary fallbackTitle="Manufacturing view failed to load">
               <ManufacturingView />
             </ErrorBoundary>
@@ -156,7 +156,7 @@ export default function AppShell() {
         );
       case 'inventory':
         return (
-          <motion.div key="inventory" className="flex-1 overflow-hidden flex flex-col" {...viewTransition}>
+          <motion.div key="inventory" className="flex-1 min-h-0 overflow-y-auto" {...viewTransition}>
             <ErrorBoundary fallbackTitle="Inventory failed to load">
               <InventoryView />
             </ErrorBoundary>
@@ -164,7 +164,7 @@ export default function AppShell() {
         );
       case 'analytics':
         return (
-          <motion.div key="analytics" className="flex-1 overflow-hidden flex flex-col" {...viewTransition}>
+          <motion.div key="analytics" className="flex-1 min-h-0 overflow-y-auto" {...viewTransition}>
             <ErrorBoundary fallbackTitle="Analytics failed to load">
               <AnalyticsView />
             </ErrorBoundary>
@@ -172,7 +172,7 @@ export default function AppShell() {
         );
       case 'brand-assets':
         return (
-          <motion.div key="brand-assets" className="flex-1 overflow-hidden flex flex-col" {...viewTransition}>
+          <motion.div key="brand-assets" className="flex-1 min-h-0 overflow-y-auto" {...viewTransition}>
             <ErrorBoundary fallbackTitle="Brand Assets failed to load">
               <BrandAssetsView />
             </ErrorBoundary>
@@ -180,7 +180,7 @@ export default function AppShell() {
         );
       default:
         return (
-          <motion.div key="dashboard-default" className="flex-1 overflow-hidden flex flex-col" {...viewTransition}>
+          <motion.div key="dashboard-default" className="flex-1 min-h-0 overflow-y-auto" {...viewTransition}>
             <ErrorBoundary>
               <DashboardView />
             </ErrorBoundary>
