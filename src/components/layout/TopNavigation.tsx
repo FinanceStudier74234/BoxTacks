@@ -176,6 +176,7 @@ export default function TopNavigation() {
   const [showNewMenu, setShowNewMenu]       = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showNotifMenu, setShowNotifMenu]   = useState(false);
+  const [showAvatarMenu, setShowAvatarMenu] = useState(false);
   const [searchFocused, setSearchFocused]   = useState(false);
 
   const activeItem = getActiveItem();
@@ -324,6 +325,7 @@ export default function TopNavigation() {
         {/* Save indicator */}
         <button
           onClick={triggerSave}
+          aria-label={isDirty ? 'Save changes' : 'All changes saved'}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
             isDirty
               ? 'bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200'
@@ -338,6 +340,7 @@ export default function TopNavigation() {
         <div className="relative">
           <button
             onClick={() => setShowNewMenu(!showNewMenu)}
+            aria-label="Create new item"
             className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl text-xs font-bold shadow-sm hover:opacity-95 transition-all"
           >
             <Plus size={13} />
@@ -403,6 +406,7 @@ export default function TopNavigation() {
         <div className="relative">
           <button
             onClick={() => setShowExportMenu(!showExportMenu)}
+            aria-label="Export product"
             className="flex items-center gap-1 px-3 py-1.5 border border-slate-200 text-slate-600 rounded-xl text-xs font-semibold hover:bg-slate-50 hover:border-slate-300 transition-all"
           >
             <Download size={13} />
@@ -521,10 +525,63 @@ export default function TopNavigation() {
           {showNotifMenu && <div className="fixed inset-0 z-40" onClick={() => setShowNotifMenu(false)} />}
         </div>
 
-        {/* Avatar */}
-        <button className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white text-xs font-bold hover:opacity-90 transition-opacity shadow-sm">
-          A
-        </button>
+        {/* Avatar with dropdown */}
+        <div className="relative">
+          <button
+            onClick={() => setShowAvatarMenu(!showAvatarMenu)}
+            className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white text-xs font-bold hover:opacity-90 transition-opacity shadow-sm"
+            aria-label="User menu"
+          >
+            A
+          </button>
+          <AnimatePresence>
+            {showAvatarMenu && (
+              <motion.div
+                initial={{ opacity: 0, y: 6, scale: 0.97 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 6, scale: 0.97 }}
+                className="absolute right-0 top-full mt-2 w-56 bg-white border border-slate-100 rounded-2xl shadow-xl z-50 overflow-hidden py-2"
+              >
+                <div className="px-4 py-3 border-b border-slate-50">
+                  <p className="text-sm font-bold text-slate-800">Admin User</p>
+                  <p className="text-xs text-slate-400">admin@boxtacks.studio</p>
+                </div>
+                <div className="py-1">
+                  <button
+                    onClick={() => { setCurrentView('dashboard'); setActiveNavTab('home'); setShowAvatarMenu(false); }}
+                    className="w-full text-left px-4 py-2 text-xs text-slate-600 hover:bg-slate-50 transition-colors"
+                  >
+                    Home
+                  </button>
+                  <button
+                    onClick={() => { setCurrentView('brand-assets'); setActiveNavTab('brand-assets'); setShowAvatarMenu(false); }}
+                    className="w-full text-left px-4 py-2 text-xs text-slate-600 hover:bg-slate-50 transition-colors"
+                  >
+                    Brand Assets
+                  </button>
+                  <button
+                    onClick={() => { setCurrentView('analytics'); setActiveNavTab('analytics'); setShowAvatarMenu(false); }}
+                    className="w-full text-left px-4 py-2 text-xs text-slate-600 hover:bg-slate-50 transition-colors"
+                  >
+                    Analytics
+                  </button>
+                </div>
+                <div className="border-t border-slate-50 pt-1">
+                  <div className="px-4 py-2">
+                    <p className="text-[10px] text-slate-400">Keyboard Shortcuts</p>
+                    <div className="mt-1 space-y-0.5 text-[10px] text-slate-500">
+                      <p><kbd className="font-mono bg-slate-100 px-1 rounded">⌘S</kbd> Save</p>
+                      <p><kbd className="font-mono bg-slate-100 px-1 rounded">⌘D</kbd> Duplicate</p>
+                      <p><kbd className="font-mono bg-slate-100 px-1 rounded">⌘N</kbd> New Item</p>
+                      <p><kbd className="font-mono bg-slate-100 px-1 rounded">Del</kbd> Delete Element</p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          {showAvatarMenu && <div className="fixed inset-0 z-40" onClick={() => setShowAvatarMenu(false)} />}
+        </div>
       </div>
     </header>
   );

@@ -1,6 +1,13 @@
 'use client';
 
-import { statusConfig } from '@/data/sampleData';
+import { STATUS_COLOR, STATUS_LABEL, STATUS_BG } from '@/constants/statusConfig';
+
+const statusConfig: Record<string, { label: string; color: string; bg: string }> = Object.fromEntries(
+  Object.keys(STATUS_COLOR).map((key) => [
+    key,
+    { label: STATUS_LABEL[key as keyof typeof STATUS_LABEL], color: STATUS_COLOR[key as keyof typeof STATUS_COLOR], bg: STATUS_BG[key as keyof typeof STATUS_BG] },
+  ])
+);
 import type { ProductStatus } from '@/types';
 
 interface StatusBadgeProps {

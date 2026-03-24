@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Upload,
@@ -396,7 +396,9 @@ function RadiusToken({ name, value, radius }: { name: string; value: string; rad
 // MAIN BRAND ASSETS VIEW
 // ─────────────────────────────────────────────────────────────────────────────
 export default function BrandAssetsView() {
-  const { assets, setNotification } = useAppStore();
+  const { assets, addAsset, setNotification, setActiveItem, setCurrentView } = useAppStore();
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('All');
@@ -431,15 +433,38 @@ export default function BrandAssetsView() {
   }
 
   function handleUpload() {
-    setNotification({ type: 'info', message: 'Upload coming soon!' });
+    fileInputRef.current?.click();
+  }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
+    if (!files) return;
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        addAsset({
+          name: file.name.replace(/\.[^/.]+$/, ''),
+          type: file.name.endsWith('.svg') ? 'icon' : 'graphic',
+          src: reader.result as string,
+          tags: [file.name.split('.').pop() || 'image'],
+        });
+        setNotification({ type: 'success', message: `Uploaded "${file.name}"` });
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = '';
   }
 
   function handleUseAsset(asset: Asset) {
     setNotification({ type: 'info', message: `"${asset.name}" added to workspace` });
+    if (useAppStore.getState().activeItemId) {
+      setCurrentView('workspace');
+    }
   }
 
   return (
     <div className="min-h-screen bg-[#FAFBFF]">
+      <input type="file" ref={fileInputRef} accept="image/*,.svg" multiple onChange={handleFileChange} className="hidden" />
       <div className="max-w-screen-2xl mx-auto px-6 py-6">
 
         {/* ── Top Bar ─────────────────────────────────────────────────── */}

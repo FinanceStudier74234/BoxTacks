@@ -8,11 +8,8 @@ import {
 import { useAppStore } from '@/store/appStore';
 import StatusBadge from '@/components/ui/StatusBadge';
 import { getRelativeTime } from '@/lib/utils';
+import { ALL_STATUSES } from '@/constants/statusConfig';
 import type { ProductItem, ProductStatus } from '@/types';
-
-const ALL_STATUSES: ProductStatus[] = [
-  'idea', 'designing', 'sample-ordered', 'in-revision', 'approved', 'production-ready',
-];
 
 interface Props {
   item: ProductItem;

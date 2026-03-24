@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, AlertCircle, Info, X } from 'lucide-react';
 import TopNavigation from './TopNavigation';
 import LeftSidebar from './LeftSidebar';
+import ErrorBoundary from '@/components/ui/ErrorBoundary';
 import DashboardView from '@/components/dashboard/DashboardView';
 import MainWorkspace from '@/components/workspace/MainWorkspace';
 import TemplateGallery from '@/components/templates/TemplateGallery';
@@ -40,11 +41,76 @@ export default function AppShell() {
   // Global keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const state = useAppStore.getState();
+      const isInputFocused = ['INPUT', 'TEXTAREA', 'SELECT'].includes(
+        (document.activeElement?.tagName || '')
+      );
+
+      // Ctrl/Cmd+S — Save
       if ((e.metaKey || e.ctrlKey) && e.key === 's') {
         e.preventDefault();
-        useAppStore.getState().triggerSave();
+        state.triggerSave();
+        return;
+      }
+
+      // Skip shortcuts if user is typing in an input
+      if (isInputFocused) return;
+
+      // Ctrl/Cmd+D — Duplicate active item
+      if ((e.metaKey || e.ctrlKey) && e.key === 'd') {
+        e.preventDefault();
+        if (state.activeItemId) {
+          state.duplicateItem(state.activeItemId);
+          state.setNotification({ type: 'success', message: 'Item duplicated' });
+        }
+        return;
+      }
+
+      // Ctrl/Cmd+N — New item
+      if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
+        e.preventDefault();
+        state.openNewItemModal();
+        return;
+      }
+
+      // Delete/Backspace — Delete selected design element
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (state.selectedElementId && state.activeItemId) {
+          e.preventDefault();
+          state.deleteDesignElement(state.activeItemId, state.selectedElementId);
+        }
+        return;
+      }
+
+      // Escape — Deselect element or close modals
+      if (e.key === 'Escape') {
+        if (state.selectedElementId) {
+          state.setSelectedElement(null);
+        } else if (state.isNewItemModalOpen) {
+          state.closeNewItemModal();
+        } else if (state.isNewCategoryModalOpen) {
+          state.closeNewCategoryModal();
+        }
+        return;
+      }
+
+      // 1-7 — Quick view switch
+      const viewKeys: Record<string, typeof state.currentView> = {
+        '1': 'dashboard',
+        '2': 'workspace',
+        '3': 'templates',
+        '4': 'manufacturing',
+        '5': 'inventory',
+        '6': 'brand-assets',
+        '7': 'analytics',
+      };
+      if ((e.metaKey || e.ctrlKey) && viewKeys[e.key]) {
+        e.preventDefault();
+        state.setCurrentView(viewKeys[e.key]);
+        return;
       }
     };
+
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
@@ -54,50 +120,70 @@ export default function AppShell() {
       case 'dashboard':
         return (
           <motion.div key="dashboard" className="flex-1 overflow-hidden flex flex-col" {...viewTransition}>
-            <DashboardView />
+            <ErrorBoundary fallbackTitle="Dashboard failed to load">
+              <DashboardView />
+            </ErrorBoundary>
           </motion.div>
         );
       case 'workspace':
         return (
           <motion.div key="workspace" className="flex flex-1 overflow-hidden" {...viewTransition}>
-            <MainWorkspace />
-            {rightPanelExpanded && <RightInspector />}
+            <ErrorBoundary fallbackTitle="Workspace failed to load">
+              <MainWorkspace />
+            </ErrorBoundary>
+            {rightPanelExpanded && (
+              <ErrorBoundary fallbackTitle="Inspector failed to load">
+                <RightInspector />
+              </ErrorBoundary>
+            )}
           </motion.div>
         );
       case 'templates':
         return (
           <motion.div key="templates" className="flex-1 overflow-hidden flex flex-col" {...viewTransition}>
-            <TemplateGallery />
+            <ErrorBoundary fallbackTitle="Templates failed to load">
+              <TemplateGallery />
+            </ErrorBoundary>
           </motion.div>
         );
       case 'manufacturing':
         return (
           <motion.div key="manufacturing" className="flex-1 overflow-hidden flex flex-col" {...viewTransition}>
-            <ManufacturingView />
+            <ErrorBoundary fallbackTitle="Manufacturing view failed to load">
+              <ManufacturingView />
+            </ErrorBoundary>
           </motion.div>
         );
       case 'inventory':
         return (
           <motion.div key="inventory" className="flex-1 overflow-hidden flex flex-col" {...viewTransition}>
-            <InventoryView />
+            <ErrorBoundary fallbackTitle="Inventory failed to load">
+              <InventoryView />
+            </ErrorBoundary>
           </motion.div>
         );
       case 'analytics':
         return (
           <motion.div key="analytics" className="flex-1 overflow-hidden flex flex-col" {...viewTransition}>
-            <AnalyticsView />
+            <ErrorBoundary fallbackTitle="Analytics failed to load">
+              <AnalyticsView />
+            </ErrorBoundary>
           </motion.div>
         );
       case 'brand-assets':
         return (
           <motion.div key="brand-assets" className="flex-1 overflow-hidden flex flex-col" {...viewTransition}>
-            <BrandAssetsView />
+            <ErrorBoundary fallbackTitle="Brand Assets failed to load">
+              <BrandAssetsView />
+            </ErrorBoundary>
           </motion.div>
         );
       default:
         return (
           <motion.div key="dashboard-default" className="flex-1 overflow-hidden flex flex-col" {...viewTransition}>
-            <DashboardView />
+            <ErrorBoundary>
+              <DashboardView />
+            </ErrorBoundary>
           </motion.div>
         );
     }
@@ -155,12 +241,26 @@ export default function AppShell() {
             <button
               onClick={() => setNotification(null)}
               className="text-slate-400 hover:text-slate-600 transition-colors flex-shrink-0"
+              aria-label="Dismiss notification"
             >
               <X size={14} />
             </button>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Keyboard shortcut hint — only shown on first visit */}
+      <div className="fixed bottom-6 left-6 z-40 hidden lg:block">
+        <p className="text-[10px] text-slate-400">
+          <kbd className="px-1 py-0.5 bg-slate-100 rounded text-[9px] font-mono">⌘S</kbd> Save
+          {' · '}
+          <kbd className="px-1 py-0.5 bg-slate-100 rounded text-[9px] font-mono">⌘D</kbd> Duplicate
+          {' · '}
+          <kbd className="px-1 py-0.5 bg-slate-100 rounded text-[9px] font-mono">Del</kbd> Delete
+          {' · '}
+          <kbd className="px-1 py-0.5 bg-slate-100 rounded text-[9px] font-mono">Esc</kbd> Deselect
+        </p>
+      </div>
     </div>
   );
 }

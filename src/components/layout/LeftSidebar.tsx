@@ -7,6 +7,7 @@ import {
   Pencil, Trash2, Copy, Home, Sparkles
 } from 'lucide-react';
 import { useAppStore } from '@/store/appStore';
+import { STATUS_COLOR } from '@/constants/statusConfig';
 import type { Category, ProductItem } from '@/types';
 
 export default function LeftSidebar() {
@@ -411,14 +412,7 @@ function SidebarItem({ item, isActive, isHovered, categoryColor, onHover, onClic
       <div
         className="w-1.5 h-1.5 rounded-full flex-shrink-0 opacity-70"
         style={{
-          backgroundColor: {
-            'idea': '#9CA3AF',
-            'designing': '#3B82F6',
-            'sample-ordered': '#F59E0B',
-            'in-revision': '#F97316',
-            'approved': '#10B981',
-            'production-ready': '#6366F1',
-          }[item.status] || '#9CA3AF'
+          backgroundColor: STATUS_COLOR[item.status as keyof typeof STATUS_COLOR] || '#9CA3AF'
         }}
       />
     </motion.div>

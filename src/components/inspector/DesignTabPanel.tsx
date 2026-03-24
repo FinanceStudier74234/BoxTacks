@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   Type, Square, Circle, Minus, Upload,
   AlignLeft, AlignCenter, AlignRight, AlignJustify,
@@ -8,13 +8,8 @@ import {
   Bold, Italic, Underline
 } from 'lucide-react';
 import { useAppStore } from '@/store/appStore';
+import { DESIGN_PALETTE as COLORS } from '@/constants/statusConfig';
 import type { ProductItem } from '@/types';
-
-const COLORS = [
-  '#FFFFFF', '#000000', '#1E293B', '#EF4444', '#F97316',
-  '#F59E0B', '#10B981', '#06B6D4', '#3B82F6', '#6366F1',
-  '#8B5CF6', '#EC4899', '#64748B', '#CBD5E1',
-];
 
 const FONTS = [
   'Inter', 'Georgia', 'Times New Roman', 'Courier New',
@@ -28,6 +23,29 @@ interface Props {
 export default function DesignTabPanel({ item }: Props) {
   const { addDesignElement, setWorkspaceMode } = useAppStore();
   const [selectedColor, setSelectedColor] = useState('#FFFFFF');
+  const imageInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      setWorkspaceMode('2d');
+      addDesignElement(item.id, {
+        type: 'image',
+        x: 100,
+        y: 100,
+        width: 200,
+        height: 200,
+        src: dataUrl,
+        visible: true,
+        locked: false,
+      });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
 
   const handleAddText = () => {
     setWorkspaceMode('2d');
@@ -62,6 +80,7 @@ export default function DesignTabPanel({ item }: Props) {
 
   return (
     <div className="p-4 space-y-5">
+      <input type="file" accept="image/*" ref={imageInputRef} onChange={handleImageUpload} className="hidden" />
       {/* Quick Add Tools */}
       <div>
         <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2.5">Add Elements</p>
@@ -70,7 +89,7 @@ export default function DesignTabPanel({ item }: Props) {
             { icon: Type, label: 'Text', action: handleAddText },
             { icon: Square, label: 'Rect', action: () => handleAddShape('rect') },
             { icon: Circle, label: 'Circle', action: () => handleAddShape('circle') },
-            { icon: Upload, label: 'Image', action: () => alert('Upload image') },
+            { icon: Upload, label: 'Image', action: () => imageInputRef.current?.click() },
           ].map(({ icon: Icon, label, action }) => (
             <button
               key={label}

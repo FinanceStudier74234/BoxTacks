@@ -1,9 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Star, ArrowRight, Zap, BookTemplate } from 'lucide-react';
 import { useAppStore } from '@/store/appStore';
+import { generateSKU } from '@/lib/utils';
 import type { Template, TemplateCategory } from '@/types';
 
 const containerVariants = {
@@ -19,7 +21,7 @@ const itemVariants = {
 const CATEGORIES: TemplateCategory[] = ['Apparel', 'Packaging', 'Stationery', 'Poster', 'Business'];
 
 export default function TemplateGallery() {
-  const { templates, openNewItemModal, setNotification, setCurrentView } = useAppStore();
+  const { templates, addItem, categories, openNewItemModal, setNotification, setCurrentView } = useAppStore();
   const [activeCategory, setActiveCategory] = useState<TemplateCategory | 'All'>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
@@ -33,9 +35,27 @@ export default function TemplateGallery() {
   });
 
   const handleUseTemplate = (template: Template) => {
+    const defaultCategory =
+      categories.find((c) => c.id === 'cat-apparel') || categories[0];
+    if (!defaultCategory) return;
+
+    addItem({
+      name: template.name,
+      type: template.category,
+      sku: generateSKU(template.category, template.name),
+      status: 'designing',
+      tags: template.tags,
+      designData: {
+        elements: template.designData?.elements || [],
+        background: template.designData?.background || '#FFFFFF',
+        width: template.designData?.width || 500,
+        height: template.designData?.height || 600,
+        currentView: template.designData?.currentView || 'front',
+      },
+      categoryId: defaultCategory.id,
+    });
+
     setNotification({ type: 'success', message: `Template "${template.name}" applied!` });
-    openNewItemModal();
-    setCurrentView('workspace');
   };
 
   return (

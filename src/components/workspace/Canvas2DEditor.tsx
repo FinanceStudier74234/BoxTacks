@@ -11,6 +11,7 @@ import {
   Bold, Italic, Upload, ChevronDown, Layers
 } from 'lucide-react';
 import { useAppStore } from '@/store/appStore';
+import { DESIGN_PALETTE as COLORS } from '@/constants/statusConfig';
 import type { ProductItem, DesignElement, ProductView } from '@/types';
 
 // Tool types
@@ -24,11 +25,6 @@ const VIEWS: { id: ProductView; label: string }[] = [
 ];
 
 const FONTS = ['Inter', 'Georgia', 'Courier New', 'Arial', 'Impact', 'Helvetica Neue'];
-const COLORS = [
-  '#FFFFFF', '#000000', '#EF4444', '#F97316', '#F59E0B',
-  '#10B981', '#06B6D4', '#3B82F6', '#6366F1', '#8B5CF6',
-  '#EC4899', '#1E293B', '#64748B', '#CBD5E1',
-];
 
 interface Props {
   item: ProductItem;
@@ -54,6 +50,7 @@ export default function Canvas2DEditor({ item }: Props) {
   const stageRef = useRef<Konva.Stage>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
   const layerRef = useRef<Konva.Layer>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   const designData = item.designData || {
     elements: [],
@@ -193,6 +190,27 @@ export default function Canvas2DEditor({ item }: Props) {
     updateItemDesign(item.id, { ...designData, background: color });
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      addDesignElement(item.id, {
+        type: 'image',
+        x: 100,
+        y: 100,
+        width: 200,
+        height: 200,
+        src: dataUrl,
+        visible: true,
+        locked: false,
+      });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
   // Canvas dimensions
   const canvasW = designData.width || 500;
   const canvasH = designData.height || 600;
@@ -201,6 +219,7 @@ export default function Canvas2DEditor({ item }: Props) {
 
   return (
     <div className="flex h-full overflow-hidden">
+      <input type="file" accept="image/*" ref={imageInputRef} onChange={handleImageUpload} className="hidden" />
       {/* Left Toolbar */}
       <div className="w-12 bg-white border-r border-slate-100 flex flex-col items-center py-3 gap-1 flex-shrink-0">
         {/* Tools */}
@@ -252,7 +271,7 @@ export default function Canvas2DEditor({ item }: Props) {
         <button
           title="Upload Image"
           className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-all"
-          onClick={() => alert('Image upload — connect to file input')}
+          onClick={() => imageInputRef.current?.click()}
         >
           <Upload size={16} />
         </button>
