@@ -12,7 +12,7 @@ export type ProductStatus =
 
 export type WorkspaceMode = '2d' | 'mockup' | '3d' | 'details';
 
-export type AppView = 'dashboard' | 'workspace' | 'templates' | 'manufacturing';
+export type AppView = 'dashboard' | 'workspace' | 'templates' | 'manufacturing' | 'inventory' | 'analytics' | 'brand-assets';
 
 export type DesignElementType = 'text' | 'image' | 'rect' | 'circle' | 'line';
 
