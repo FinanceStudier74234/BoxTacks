@@ -297,10 +297,8 @@ function StatCard({
 // MAIN COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
 export default function ManufacturingView() {
-  const { categories, getAllItems, setActiveItem, setCurrentView, setActiveNavTab } = useAppStore();
-
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [statusFilter, setStatusFilter] = useState<ProductStatus | 'all'>('all');
+  const { getAllItems, categories, setActiveItem, setCurrentView, setActiveNavTab, updateItemStatus } = useAppStore();
+  const [activeStage, setActiveStage] = useState<'design' | 'sampling' | 'production'>('design');
 
   const allItems = getAllItems();
 
@@ -313,62 +311,42 @@ export default function ManufacturingView() {
     return map;
   }, [categories]);
 
-  // Unique category names for filter dropdown
-  const categoryOptions = useMemo(() => {
-    const names = new Set(categories.map((c) => c.name));
-    return ['all', ...Array.from(names)];
-  }, [categories]);
+  const stages = {
+    design: {
+      label: 'Design',
+      statuses: ['idea', 'designing'] as ProductStatus[],
+      emoji: '✏️',
+      color: '#6366F1',
+      nextStatus: 'sample-ordered' as ProductStatus,
+      nextLabel: 'Move to Sampling',
+    },
+    sampling: {
+      label: 'Sampling',
+      statuses: ['sample-ordered', 'in-revision'] as ProductStatus[],
+      emoji: '📬',
+      color: '#F97316',
+      nextStatus: 'approved' as ProductStatus,
+      nextLabel: 'Move to Production',
+    },
+    production: {
+      label: 'Production',
+      statuses: ['approved', 'production-ready'] as ProductStatus[],
+      emoji: '🚀',
+      color: '#10B981',
+      nextStatus: null,
+      nextLabel: null,
+    },
+  };
 
-  // Filtered items
-  const filteredItems = useMemo(() => {
-    return allItems.filter((item) => {
-      const catMatch =
-        categoryFilter === 'all' ||
-        (categoryMap[item.categoryId]?.name || '') === categoryFilter;
-      const statusMatch = statusFilter === 'all' || item.status === statusFilter;
-      return catMatch && statusMatch;
-    });
-  }, [allItems, categoryFilter, statusFilter, categoryMap]);
+  const stageItems = allItems.filter((i) =>
+    (stages[activeStage].statuses as string[]).includes(i.status)
+  );
 
-  // Group by status
-  const itemsByStatus = useMemo(() => {
-    const grouped: Record<ProductStatus, ProductItem[]> = {
-      idea: [],
-      designing: [],
-      'sample-ordered': [],
-      'in-revision': [],
-      approved: [],
-      'production-ready': [],
-    };
-    for (const item of filteredItems) {
-      if (item.status in grouped) {
-        grouped[item.status].push(item);
-      }
-    }
-    return grouped;
-  }, [filteredItems]);
-
-  // Stat calculations
-  const totalProducts = allItems.length;
-  const inProduction = allItems.filter(
-    (i) => i.status === 'sample-ordered' || i.status === 'in-revision' || i.status === 'designing'
-  ).length;
-  const readyToShip = allItems.filter((i) => i.status === 'production-ready').length;
-
-  const avgLeadTime = useMemo(() => {
-    const withLead = allItems.filter((i) => i.manufacturing?.leadTime);
-    if (withLead.length === 0) return 'N/A';
-    // Try to extract first number from lead time strings
-    const days = withLead
-      .map((i) => {
-        const match = i.manufacturing?.leadTime?.match(/\d+/);
-        return match ? parseInt(match[0], 10) : null;
-      })
-      .filter((d): d is number => d !== null);
-    if (days.length === 0) return 'N/A';
-    const avg = Math.round(days.reduce((a, b) => a + b, 0) / days.length);
-    return `${avg}d`;
-  }, [allItems]);
+  const stageCounts = {
+    design: allItems.filter((i) => (stages.design.statuses as string[]).includes(i.status)).length,
+    sampling: allItems.filter((i) => (stages.sampling.statuses as string[]).includes(i.status)).length,
+    production: allItems.filter((i) => (stages.production.statuses as string[]).includes(i.status)).length,
+  };
 
   function handleOpenItem(id: string) {
     setActiveItem(id);
@@ -376,8 +354,10 @@ export default function ManufacturingView() {
     setActiveNavTab('Workspace');
   }
 
+  const currentStage = stages[activeStage];
+
   return (
-    <div className="min-h-screen" style={{ background: '#F8F9FF' }}>
+    <div style={{ background: '#F8F9FF' }}>
       {/* ── Page header ── */}
       <div
         className="px-6 pt-6 pb-5"
@@ -410,175 +390,158 @@ export default function ManufacturingView() {
 
       <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
 
-        {/* ── Top stat cards ── */}
-        <motion.div
-          variants={staggerContainer}
-          initial="hidden"
-          animate="visible"
-          className="grid grid-cols-2 lg:grid-cols-4 gap-4"
-        >
-          <StatCard
-            label="Total Products"
-            value={totalProducts}
-            sub={`across ${categories.length} categories`}
-            icon={Package}
-            accentColor="#6366f1"
-          />
-          <StatCard
-            label="In Production"
-            value={inProduction}
-            sub="designing · sampling · revision"
-            icon={Factory}
-            accentColor="#3b82f6"
-          />
-          <StatCard
-            label="Ready to Ship"
-            value={readyToShip}
-            sub="production-ready items"
-            icon={CheckCircle}
-            accentColor="#10b981"
-          />
-          <StatCard
-            label="Avg Lead Time"
-            value={avgLeadTime}
-            sub="across sampled products"
-            icon={Clock}
-            accentColor="#f59e0b"
-          />
-        </motion.div>
-
-        {/* ── Filter row ── */}
+        {/* ── Stage tab bar ── */}
         <motion.div
           variants={fadeUpVariant}
           initial="hidden"
           animate="visible"
-          className="flex flex-wrap items-center gap-3"
+          className="flex items-center gap-2 bg-white rounded-2xl border border-slate-100 p-1.5"
+          style={{ boxShadow: '0 2px 10px rgba(0,0,0,0.05)', width: 'fit-content' }}
         >
-          {/* Category dropdown */}
-          <div className="relative">
-            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="appearance-none pl-9 pr-8 py-2 rounded-xl text-sm font-semibold text-slate-700 border border-slate-200 outline-none transition-all cursor-pointer"
-              style={{ background: '#ffffff' }}
-            >
-              {categoryOptions.map((opt) => (
-                <option key={opt} value={opt}>
-                  {opt === 'all' ? 'All Categories' : opt}
-                </option>
-              ))}
-            </select>
-            <ChevronRight className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 rotate-90 pointer-events-none" />
-          </div>
-
-          {/* Status filter pills */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <button
-              onClick={() => setStatusFilter('all')}
-              className="px-3 py-1.5 rounded-xl text-xs font-bold transition-all"
-              style={
-                statusFilter === 'all'
-                  ? { background: '#6366f1', color: '#ffffff' }
-                  : { background: '#f1f5f9', color: '#64748b' }
-              }
-            >
-              All Statuses
-            </button>
-            {STATUS_ORDER.map((s) => {
-              const cfg = STATUS_CONFIG[s];
-              const active = statusFilter === s;
-              return (
-                <button
-                  key={s}
-                  onClick={() => setStatusFilter(s)}
-                  className="px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
+          {(Object.entries(stages) as [keyof typeof stages, typeof stages[keyof typeof stages]][]).map(([key, stage]) => {
+            const isActive = activeStage === key;
+            const count = stageCounts[key];
+            return (
+              <button
+                key={key}
+                onClick={() => setActiveStage(key)}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all"
+                style={
+                  isActive
+                    ? { background: stage.color, color: '#ffffff', boxShadow: `0 4px 12px ${stage.color}44` }
+                    : { background: 'transparent', color: '#64748b' }
+                }
+              >
+                <span>{stage.emoji}</span>
+                {stage.label}
+                <span
+                  className="text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center"
                   style={
-                    active
-                      ? { background: cfg.color, color: '#ffffff' }
-                      : { background: `${cfg.color}15`, color: cfg.color }
+                    isActive
+                      ? { background: 'rgba(255,255,255,0.25)', color: '#ffffff' }
+                      : { background: `${stage.color}18`, color: stage.color }
                   }
                 >
-                  <span
-                    className="inline-block w-1.5 h-1.5 rounded-full flex-none"
-                    style={{ background: active ? 'rgba(255,255,255,0.7)' : cfg.color }}
-                  />
-                  {cfg.label}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Item count */}
-          <span className="ml-auto text-sm text-slate-400 font-medium">
-            {filteredItems.length} product{filteredItems.length !== 1 ? 's' : ''}
-          </span>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
         </motion.div>
 
-        {/* ── Kanban Board ── */}
+        {/* ── Items grid ── */}
         <motion.div
+          key={activeStage}
           variants={fadeUpVariant}
           initial="hidden"
           animate="visible"
         >
-          <div
-            className="flex gap-4 overflow-x-auto pb-6"
-            style={{ minHeight: 420 }}
-          >
-            {STATUS_ORDER.map((status) => (
-              <KanbanColumn
-                key={status}
-                status={status}
-                items={itemsByStatus[status]}
-                categoryMap={categoryMap}
-                onOpenItem={handleOpenItem}
-              />
-            ))}
-          </div>
-        </motion.div>
-
-        {/* ── Summary footer ── */}
-        <motion.div
-          variants={fadeUpVariant}
-          initial="hidden"
-          animate="visible"
-          className="bg-white rounded-2xl border border-slate-100 px-5 py-4"
-          style={{ boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}
-        >
-          <div className="flex flex-wrap items-center gap-4 justify-between">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-indigo-400" />
-              <span className="text-sm font-bold text-slate-700">Pipeline Overview</span>
+          {stageItems.length === 0 ? (
+            <div
+              className="flex flex-col items-center justify-center py-16 rounded-2xl border-2 border-dashed border-slate-200 text-center"
+              style={{ background: '#ffffff' }}
+            >
+              <span className="text-4xl mb-3 opacity-50">{currentStage.emoji}</span>
+              <p className="font-semibold text-slate-500 text-sm">No products in {currentStage.label} stage</p>
+              <p className="text-slate-400 text-xs mt-1">
+                {activeStage === 'design'
+                  ? 'Add a new product to get started'
+                  : `Move products from the previous stage`}
+              </p>
             </div>
-            <div className="flex flex-wrap gap-3">
-              {STATUS_ORDER.map((s) => {
-                const cfg = STATUS_CONFIG[s];
-                const count = itemsByStatus[s].length;
+          ) : (
+            <motion.div
+              variants={staggerContainer}
+              initial="hidden"
+              animate="visible"
+              className="grid grid-cols-2 md:grid-cols-3 gap-4"
+            >
+              {stageItems.map((item) => {
+                const cat = categoryMap[item.categoryId] || { name: 'Unknown', color: '#94a3b8' };
+                const statusCfg = STATUS_CONFIG[item.status];
+                const emoji = PRODUCT_TYPE_EMOJI[item.type] || '📦';
                 return (
-                  <div key={s} className="flex items-center gap-1.5">
-                    <span
-                      className="inline-block w-2 h-2 rounded-full"
-                      style={{ background: cfg.color }}
-                    />
-                    <span className="text-xs text-slate-500 font-medium">{cfg.label}</span>
-                    <span
-                      className="text-xs font-bold px-1.5 py-0.5 rounded-full"
-                      style={{ background: `${cfg.color}18`, color: cfg.color }}
+                  <motion.div
+                    key={item.id}
+                    variants={cardVariant}
+                    className="bg-white rounded-xl border border-slate-100 overflow-hidden"
+                    style={{ boxShadow: '0 2px 10px rgba(0,0,0,0.06)' }}
+                  >
+                    {/* Left accent + content */}
+                    <div
+                      className="flex gap-3 p-3"
+                      style={{ borderLeft: `3px solid ${currentStage.color}` }}
                     >
-                      {count}
-                    </span>
-                  </div>
+                      <div
+                        className="w-9 h-9 rounded-lg flex-none flex items-center justify-center text-xl"
+                        style={{ background: `${currentStage.color}18` }}
+                      >
+                        {emoji}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-slate-800 text-sm truncate leading-tight">{item.name}</p>
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <span
+                            className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+                            style={{ background: `${cat.color}18`, color: cat.color }}
+                          >
+                            {cat.name}
+                          </span>
+                          <span className="text-slate-400 text-[10px]">{item.type}</span>
+                        </div>
+                        {item.manufacturing?.supplierName && (
+                          <p className="text-slate-500 text-[11px] mt-1.5 flex items-center gap-1">
+                            <Factory className="w-3 h-3 flex-none text-slate-400" />
+                            <span className="truncate">{item.manufacturing.supplierName}</span>
+                          </p>
+                        )}
+                        <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100">
+                          <span
+                            className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                            style={{ background: `${statusCfg.color}18`, color: statusCfg.color }}
+                          >
+                            {statusCfg.label}
+                          </span>
+                          <button
+                            onClick={() => handleOpenItem(item.id)}
+                            className="text-[10px] font-semibold text-indigo-500 hover:text-indigo-700 flex items-center gap-0.5 transition-colors"
+                          >
+                            Open <ExternalLink className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Action button */}
+                    {currentStage.nextStatus ? (
+                      <button
+                        onClick={() => updateItemStatus(item.id, currentStage.nextStatus!)}
+                        className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-semibold transition-all hover:opacity-80"
+                        style={{
+                          background: `${currentStage.color}0d`,
+                          color: currentStage.color,
+                          borderTop: `1px solid ${currentStage.color}22`,
+                        }}
+                      >
+                        {currentStage.nextLabel} <ArrowRight className="w-3 h-3" />
+                      </button>
+                    ) : (
+                      <div
+                        className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-semibold"
+                        style={{
+                          background: `${currentStage.color}0d`,
+                          color: currentStage.color,
+                          borderTop: `1px solid ${currentStage.color}22`,
+                        }}
+                      >
+                        <CheckCircle className="w-3 h-3" /> In Production
+                      </div>
+                    )}
+                  </motion.div>
                 );
               })}
-            </div>
-            <button
-              onClick={() => { setCurrentView('dashboard'); setActiveNavTab('Dashboard'); }}
-              className="flex items-center gap-1.5 text-indigo-500 text-sm font-semibold hover:text-indigo-700 transition-colors"
-            >
-              Back to Dashboard
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
+            </motion.div>
+          )}
         </motion.div>
 
         {/* Bottom spacer */}
